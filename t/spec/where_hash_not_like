@@ -1,0 +1,23 @@
+# scalar
+WHERE %w
+{ where => { id => { 'NOT LIKE' => 'foo%' } } }
+WHERE (`id` NOT LIKE ?)
+[qw/foo%/]
+
+# -not_like 
+WHERE %w
+{ where => { id => { -not_like => 'foo%' } } }
+WHERE (`id` NOT LIKE ?)
+[qw/foo%/]
+
+# scalar ref
+WHERE %w
+{ where => { id => { 'NOT LIKE' => \'"foo%"' } } }
+WHERE (`id` NOT LIKE "foo%")
+[]
+
+# array
+WHERE %w
+{ where => { id => { 'NOT LIKE' => ['%foo', \'"bar%"'] } } }
+WHERE (`id` NOT LIKE ? OR `id` NOT LIKE "bar%")
+[qw/%foo/]

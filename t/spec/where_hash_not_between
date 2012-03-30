@@ -1,0 +1,29 @@
+# array
+WHERE %w
+{ where => { id => { 'NOT BETWEEN' => [qw/10 20/] } } }
+WHERE (`id` NOT BETWEEN ? AND ?)
+[qw/10 20/]
+
+# -between
+WHERE %w
+{ where => { id => { -not_between => [qw/10 20/] } } }
+WHERE (`id` NOT BETWEEN ? AND ?)
+[qw/10 20/]
+
+# ref
+WHERE %w
+{ where => { id => { 'NOT BETWEEN' => \['? AND ?', 10, 20] } } }
+WHERE (`id` NOT BETWEEN ? AND ?)
+[qw/10 20/]
+
+# scalar
+WHERE %w
+{ where => { id => { 'NOT BETWEEN' => \'lower(x) AND upper(y)' } } }
+WHERE (`id` NOT BETWEEN lower(x) AND upper(y))
+[]
+
+# mixed
+WHERE %w
+{ where => { id => { 'NOT BETWEEN' => [ \'lower(x)', \['upper(?)', 'stuff'] ] } } }
+WHERE (`id` NOT BETWEEN lower(x) AND upper(?))
+['stuff']

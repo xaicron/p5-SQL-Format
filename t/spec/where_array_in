@@ -1,0 +1,11 @@
+# array
+WHERE %w
+{ where => { id => [qw/1 2 3/] } }
+WHERE (`id` IN (?, ?, ?))
+[qw/1 2 3/]
+
+# empry array
+WHERE %w
+{ where => { id => [] } }
+WHERE (0=1)
+[]

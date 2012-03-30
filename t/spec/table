@@ -1,0 +1,11 @@
+# scalar
+SELECT foo FROM %t
+{ table => 'table' }
+SELECT foo FROM `table`
+[]
+
+# array
+SELECT foo FROM %t
+{ table => [qw/t1 t2/] }
+SELECT foo FROM `t1`, `t2`
+[]

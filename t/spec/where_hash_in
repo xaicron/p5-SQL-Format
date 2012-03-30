@@ -1,0 +1,47 @@
+# IN (array)
+WHERE %w
+{ where => { id => { IN => [qw/1 2 3/] } } }
+WHERE (`id` IN (?, ?, ?))
+[qw/1 2 3/]
+
+# iN (ignore case)
+WHERE %w
+{ where => { id => { iN => [qw/1 2 3/] } } }
+WHERE (`id` IN (?, ?, ?))
+[qw/1 2 3/]
+
+# -in
+WHERE %w
+{ where => { id => { -in => [qw/1 2 3/] } } }
+WHERE (`id` IN (?, ?, ?))
+[qw/1 2 3/]
+
+# IN (empry array)
+WHERE %w
+{ where => { id => { IN => [] } } }
+WHERE (0=1)
+[]
+
+# IN (scalar)
+WHERE %w
+{ where => { id => { IN => 'foo' } } }
+WHERE (`id` = ?)
+[qw/foo/]
+
+# IN (ref)
+WHERE %w
+{ where => { id => { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } } }
+WHERE (`id` IN (SELECT foo FROM bar WHERE hoge = ?))
+[qw/fuga/]
+
+# IN (scalar ref)
+WHERE %w
+{ where => { id => { 'IN' => \'SELECT foo FROM bar' } } }
+WHERE (`id` IN (SELECT foo FROM bar))
+[]
+
+# IN (undef)
+WHERE %w
+{ where => { id => { IN => undef } } }
+WHERE (`id` IS NULL)
+[]
