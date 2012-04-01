@@ -4,25 +4,28 @@ use t::Util;
 use Test::More;
 use SQL::Format;
 
-my @specs = glob('t/spec/*');
-for my $spec (@specs) {
-    open my $fh, '<', $spec or die $!;
-    while (defined(my $line = <$fh>)) {
-        chomp $line;
-        next if $line =~ /^\s*$/;
-        next unless $line =~ s/^# //;
+my $spec;
+open my $fh, '<', 'lib/SQL/Format/Spec.pod' or die $!;
+while (defined(my $line = <$fh>)) {
+    chomp $line;
+    $line =~ s/^\s*|\s*$//;
 
-        my $desc           = $line;
-        my $input          = <$fh>;
-        my $param          = _eval(scalar <$fh>);
-        my $expected       = <$fh>;
-        my $expected_binds = _eval(scalar <$fh>);
+    next unless $line =~ /^=head2 (.*)/ || $spec;
+    $spec = $1 || $spec;
 
-        subtest "$spec: $desc" => sub {
-            my ($stmt, @bind) = sqlf $input, $param;
-            is $stmt, $expected;
-            is_deeply \@bind, $expected_binds;
-        };
+    next if $line =~ /^\s*$/;
+    next unless $line =~ s/^# //;
+
+    my $desc           = $line;
+    my $input          = <$fh>;
+    my $param          = _eval(scalar <$fh>);
+    my $expected       = <$fh>;
+    my $expected_binds = _eval(scalar <$fh>);
+
+    subtest "$spec: $desc" => sub {
+        my ($stmt, @bind) = sqlf $input, $param;
+        is $stmt, $expected;
+        is_deeply \@bind, $expected_binds;
     };
 }
 

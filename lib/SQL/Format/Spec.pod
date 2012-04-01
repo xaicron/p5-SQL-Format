@@ -1,0 +1,378 @@
+=pod
+
+=encoding utf-8
+
+=for stopwords
+
+=head1 sqlf() CHEAT SHEET
+
+This cheat sheet rules are:
+
+  # Comment
+  Input  : $format
+  Input  : \%option
+  Expects: $stmt 
+  Expects: \@bind
+
+For example:
+
+  # basic select query
+  SELECT %c FROM %t WHERE %w
+  { columns => [qw/foo bar/], table => 'hoge', where => { fuga => 'piyo' } }
+  SELECT `foo`, `bar` FROM `hoge` WHERE (`fuga` = ?)
+  [qw/piyo/]
+
+  # maybe your code are
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => {
+      columns => [qw/foo bar/],
+      table   => 'hoge',
+      where   => { fuga => 'piyo' },
+  };
+
+=head2 columns
+
+  # scalar
+  SELECT %c FROM table
+  { columns => 'foo' }
+  SELECT `foo` FROM table
+  []
+  
+  # array
+  SELECT %c FROM table
+  { columns => [qw/foo bar/] }
+  SELECT `foo`, `bar` FROM table
+  []
+  
+  # empty array
+  SELECT %c FROM table
+  { columns => [] }
+  SELECT * FROM table
+  []
+  
+  # undef
+  SELECT %c FROM table
+  { columns => undef }
+  SELECT * FROM table
+  []
+  
+  # '*'
+  SELECT %c FROM table
+  { columns => '*' }
+  SELECT * FROM table
+  []
+  
+  # scalar ref
+  SELECT %c FROM table
+  { columns => \'foo AS bar' }
+  SELECT foo AS bar FROM table
+  []
+  
+  # scalar ref in array
+  SELECT %c FROM table
+  { columns => [\'foo AS bar', 'baz'] }
+  SELECT foo AS bar, `baz` FROM table
+  []
+
+=head2 table
+
+  # scalar
+  SELECT foo FROM %t
+  { table => 'table' }
+  SELECT foo FROM `table`
+  []
+  
+  # array
+  SELECT foo FROM %t
+  { table => [qw/t1 t2/] }
+  SELECT foo FROM `t1`, `t2`
+  []
+
+=head2 where array in
+
+  # array
+  WHERE %w
+  { where => { id => [qw/1 2 3/] } }
+  WHERE (`id` IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # empry array
+  WHERE %w
+  { where => { id => [] } }
+  WHERE (0=1)
+  []
+
+=head2 where array and
+
+  # scalars
+  WHERE %w
+  { where => { id => [ -and => qw/1 2 3/ ] } }
+  WHERE (`id` = ?) AND (`id` = ?) AND (`id` = ?)
+  [qw/1 2 3/]
+  
+  # hashes
+  WHERE %w
+  { where => { id => [ -and => { '>' => 10 }, { '<' => 20 } ] } }
+  WHERE (`id` > ?) AND (`id` < ?)
+  [qw/10 20/]
+  
+  # array(s)
+  WHERE %w
+  { where => { id => [ -and => [qw/1 2 3/], [qw/4 5 6/] ] } }
+  WHERE (`id` IN (?, ?, ?)) AND (`id` IN (?, ?, ?))
+  [qw/1 2 3 4 5 6/]
+  
+  # IN and scalar
+  WHERE %w
+  { where => { id => [ -and => { IN => [qw/1 2 3/] }, 4 ] } }
+  WHERE (`id` IN (?, ?, ?)) AND (`id` = ?)
+  [qw/1 2 3 4/]
+
+=head2 where array or
+
+  # scalars
+  WHERE %w
+  { where => { id => [ -or => qw/1 2 3/ ] } }
+  WHERE (`id` = ?) OR (`id` = ?) OR (`id` = ?)
+  [qw/1 2 3/]
+  
+  # hashes
+  WHERE %w
+  { where => { id => [ -or => { '>' => 10 }, { '<' => 20 } ] } }
+  WHERE (`id` > ?) OR (`id` < ?)
+  [qw/10 20/]
+  
+  # array(s)
+  WHERE %w
+  { where => { id => [ -or => [qw/1 2 3/], [qw/4 5 6/] ] } }
+  WHERE (`id` IN (?, ?, ?)) OR (`id` IN (?, ?, ?))
+  [qw/1 2 3 4 5 6/]
+  
+  # IN and scalar
+  WHERE %w
+  { where => { id => [ -or => { IN => [qw/1 2 3/] }, 4 ] } }
+  WHERE (`id` IN (?, ?, ?)) OR (`id` = ?)
+  [qw/1 2 3 4/]
+  
+  # no-op equals OR
+  WHERE %w
+  { where => { id => [ { '>' => 10 }, { '<' => 20 } ] } }
+  WHERE (`id` > ?) OR (`id` < ?)
+  [qw/10 20/]
+
+=head2 where hash in
+
+  # IN (array)
+  WHERE %w
+  { where => { id => { IN => [qw/1 2 3/] } } }
+  WHERE (`id` IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # iN (ignore case)
+  WHERE %w
+  { where => { id => { iN => [qw/1 2 3/] } } }
+  WHERE (`id` IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # -in
+  WHERE %w
+  { where => { id => { -in => [qw/1 2 3/] } } }
+  WHERE (`id` IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # IN (empry array)
+  WHERE %w
+  { where => { id => { IN => [] } } }
+  WHERE (0=1)
+  []
+  
+  # IN (scalar)
+  WHERE %w
+  { where => { id => { IN => 'foo' } } }
+  WHERE (`id` = ?)
+  [qw/foo/]
+  
+  # IN (ref)
+  WHERE %w
+  { where => { id => { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } } }
+  WHERE (`id` IN (SELECT foo FROM bar WHERE hoge = ?))
+  [qw/fuga/]
+  
+  # IN (scalar ref)
+  WHERE %w
+  { where => { id => { 'IN' => \'SELECT foo FROM bar' } } }
+  WHERE (`id` IN (SELECT foo FROM bar))
+  []
+  
+  # IN (undef)
+  WHERE %w
+  { where => { id => { IN => undef } } }
+  WHERE (`id` IS NULL)
+  []
+
+=head2 where hash not in
+
+  # NOT IN (array)
+  WHERE %w
+  { where => { id => { 'NOT IN' => [qw/1 2 3/] } } }
+  WHERE (`id` NOT IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # Not iN (ignore case)
+  WHERE %w
+  { where => { id => { 'Not iN' => [qw/1 2 3/] } } }
+  WHERE (`id` NOT IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # -not_in
+  WHERE %w
+  { where => { id => { -not_in => [qw/1 2 3/] } } }
+  WHERE (`id` NOT IN (?, ?, ?))
+  [qw/1 2 3/]
+  
+  # NOT IN (empry array)
+  WHERE %w
+  { where => { id => { 'NOT IN' => [] } } }
+  WHERE (1=1)
+  []
+  
+  # NOT IN (scalar)
+  WHERE %w
+  { where => { id => { 'NOT IN' => 'foo' } } }
+  WHERE (`id` <> ?)
+  [qw/foo/]
+  
+  # NOT IN (ref)
+  WHERE %w
+  { where => { id => { 'NOT IN' => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } } }
+  WHERE (`id` NOT IN (SELECT foo FROM bar WHERE hoge = ?))
+  [qw/fuga/]
+  
+  # NOT IN (scalar ref)
+  WHERE %w
+  { where => { id => { 'NOT IN' => \'SELECT foo FROM bar' } } }
+  WHERE (`id` NOT IN (SELECT foo FROM bar))
+  []
+  
+  # NOT IN (undef)
+  WHERE %w
+  { where => { id => { 'NOT IN' => undef } } }
+  WHERE (`id` IS NOT NULL)
+  []
+
+=head2 where hash like
+
+  # scalar
+  WHERE %w
+  { where => { id => { LIKE => 'foo%' } } }
+  WHERE (`id` LIKE ?)
+  [qw/foo%/]
+  
+  # -like
+  WHERE %w
+  { where => { id => { -like => 'foo%' } } }
+  WHERE (`id` LIKE ?)
+  [qw/foo%/]
+  
+  # scalar ref
+  WHERE %w
+  { where => { id => { LIKE => \'"foo%"' } } }
+  WHERE (`id` LIKE "foo%")
+  []
+  
+  # array
+  WHERE %w
+  { where => { id => { LIKE => ['%foo', \'"bar%"'] } } }
+  WHERE (`id` LIKE ? OR `id` LIKE "bar%")
+  [qw/%foo/]
+
+=head2 where hash no like
+
+  # scalar
+  WHERE %w
+  { where => { id => { 'NOT LIKE' => 'foo%' } } }
+  WHERE (`id` NOT LIKE ?)
+  [qw/foo%/]
+  
+  # -not_like 
+  WHERE %w
+  { where => { id => { -not_like => 'foo%' } } }
+  WHERE (`id` NOT LIKE ?)
+  [qw/foo%/]
+  
+  # scalar ref
+  WHERE %w
+  { where => { id => { 'NOT LIKE' => \'"foo%"' } } }
+  WHERE (`id` NOT LIKE "foo%")
+  []
+  
+  # array
+  WHERE %w
+  { where => { id => { 'NOT LIKE' => ['%foo', \'"bar%"'] } } }
+  WHERE (`id` NOT LIKE ? OR `id` NOT LIKE "bar%")
+  [qw/%foo/]
+
+=head2 where hash between
+
+  # array
+  WHERE %w
+  { where => { id => { BETWEEN => [qw/10 20/] } } }
+  WHERE (`id` BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # -between
+  WHERE %w
+  { where => { id => { -between => [qw/10 20/] } } }
+  WHERE (`id` BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # ref
+  WHERE %w
+  { where => { id => { BETWEEN => \['? AND ?', 10, 20] } } }
+  WHERE (`id` BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # scalar
+  WHERE %w
+  { where => { id => { BETWEEN => \'lower(x) AND upper(y)' } } }
+  WHERE (`id` BETWEEN lower(x) AND upper(y))
+  []
+  
+  # mixed
+  WHERE %w
+  { where => { id => { BETWEEN => [ \'lower(x)', \['upper(?)', 'stuff'] ] } } }
+  WHERE (`id` BETWEEN lower(x) AND upper(?))
+  ['stuff']
+
+=head2 where hash not  between
+
+  # array
+  WHERE %w
+  { where => { id => { 'NOT BETWEEN' => [qw/10 20/] } } }
+  WHERE (`id` NOT BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # -between
+  WHERE %w
+  { where => { id => { -not_between => [qw/10 20/] } } }
+  WHERE (`id` NOT BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # ref
+  WHERE %w
+  { where => { id => { 'NOT BETWEEN' => \['? AND ?', 10, 20] } } }
+  WHERE (`id` NOT BETWEEN ? AND ?)
+  [qw/10 20/]
+  
+  # scalar
+  WHERE %w
+  { where => { id => { 'NOT BETWEEN' => \'lower(x) AND upper(y)' } } }
+  WHERE (`id` NOT BETWEEN lower(x) AND upper(y))
+  []
+  
+  # mixed
+  WHERE %w
+  { where => { id => { 'NOT BETWEEN' => [ \'lower(x)', \['upper(?)', 'stuff'] ] } } }
+  WHERE (`id` NOT BETWEEN lower(x) AND upper(?))
+  ['stuff']
+
+=cut
