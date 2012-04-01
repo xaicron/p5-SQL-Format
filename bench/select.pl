@@ -69,13 +69,6 @@ cmpthese $count, {
         my ($stmt, @bind) = ('SELECT bar baz FROM foo WHERE '.$sql->as_sql, $sql->bind);
         say Dumper [$stmt, @bind] if DEBUG;
     },
-    'Raw' => sub {
-        my ($stmt, @bind) = (
-            'SELECT bar baz FROM foo WHERE fizz > ? AND hoge IN (?, ?)', 
-            qw(buzz fuga piyo),
-        );
-        say Dumper [$stmt, @bind] if DEBUG;
-    },
 }, 'all';
 
 sub show_version {
