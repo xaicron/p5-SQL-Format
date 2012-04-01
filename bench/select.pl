@@ -16,7 +16,13 @@ use Data::Dumper;
 sub DEBUG () { 0 }
 my $count ||= 10000;
 
-show_version('SQL::Abstract', 'SQL::Maker', 'SQL::Interp', 'SQL::Format');
+show_version(qw{
+    SQL::Abstract
+    SQL::Maker
+    SQL::Interp
+    SQL::Object
+    SQL::Format
+});
 
 my $abstract = SQL::Abstract->new;
 my $maker    = SQL::Maker->new(driver => 'SQLite', new_line => ' ');
