@@ -335,34 +335,35 @@ sub _quote {
 
 sub new {
     my ($class, %args) = @_;
-    $args{separator}  = $SEPARATOR  unless defined $args{separator};
-    $args{name_sep}   = $NAME_SEP   unless defined $args{name_sep};
-    $args{quote_char} = $QUOTE_CHAR unless defined $args{quote_char};
+    $args{separator}     = $SEPARATOR     unless defined $args{separator};
+    $args{name_sep}      = $NAME_SEP      unless defined $args{name_sep};
+    $args{quote_char}    = $QUOTE_CHAR    unless defined $args{quote_char};
+    $args{limit_dialect} = $LIMIT_DIALECT unless defined $args{limit_dialect};
     bless { %args }, $class;
 }
 
 sub select {
-    my ($self, $table, $col, $where, $opts) = @_;
-    $opts ||= {};
-    my $format = "SELECT %c FROM $self->{quote_char}$table$self->{quote_char}";
-    if ($where) {
+    my ($self, $table, $cols, $where, $opts) = @_;
+    croak 'Usage: $sqlf->select($table [, \@cols, \%where, \%opts])' unless defined $table;
+
+    local $SEPARATOR     = $self->{separator};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+
+    my $prefix = delete $opts->{prefix} || 'SELECT';
+    my $format = "$prefix %c FROM %t";
+    if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
     }
-    if ($opts->{order_by}) {
-        # TODO
+    if (keys %$opts) {
+        $format .= ' %o';
     }
-    if ($opts->{limit}) {
-        # TODO
-    }
-    if ($opts->{offset}) {
-        # TODO
-    }
-    local $SEPARATOR  = $self->{separator};
-    local $NAME_SEP   = $self->{name_sep};
-    local $QUOTE_CHAR = $self->{quote_char};
+
     sqlf($format, {
-        %$opts,
-        columns => $col,
+        options => $opts,
+        table   => $table,
+        columns => $cols,
         where   => $where,
     });
 }
