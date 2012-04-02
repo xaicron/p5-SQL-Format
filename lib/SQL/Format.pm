@@ -371,15 +371,21 @@ sub select {
 
 sub insert {
     my ($self, $table, $values, $opts) = @_;
-    my $prefix = $opts->{prefix} || 'INSERT INTO';
-    my $quote_char = $self->{quote_char};
-    my $quoted_tale = "$quote_char$table$quote_char";
+    croak 'Usage: $sqlf->insert($table \%values|\@values, [, \%opts])' unless defined $table && ref $values;
+
+    local $SEPARATOR     = $self->{separator};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+
+    my $prefix       = $opts->{prefix} || 'INSERT INTO';
+    my $quoted_table = _quote($table);
 
     my @values = ref $values eq 'HASH' ? %$values : @$values;
     my (@columns, @bind_cols, @bind_params);
-    for (my ($i, $l) = (0, scalar @values); $i < $l; $i += 2) {
+    for (my $i = 0; $i < @values; $i += 2) {
         my ($col, $val) = ($values[$i], $values[$i+1]);
-        push @columns, "$quote_char$col$quote_char";
+        push @columns, _quote($col);
         if (ref $val eq 'SCALAR') {
             # foo => { bar => \'NOW()' }
             push @bind_cols, $$val;
@@ -397,7 +403,7 @@ sub insert {
         }
     }
 
-    my $stmt = "$prefix $quoted_tale "
+    my $stmt = "$prefix $quoted_table "
              . '('.join(', ', @columns).') '
              . 'VALUES ('.join($self->{separator}, @bind_cols).')';
 
