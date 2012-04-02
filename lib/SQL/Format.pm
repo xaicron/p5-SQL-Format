@@ -312,14 +312,15 @@ sub sqlf {
         }
     }
 
-    my $ret;
-    $format =~ s#(\%[ctwoLO])#
-        $ret = $args->{$FMAP->{$1}};
-        croak "'$1' must be specified '$FMAP->{$1}' field" unless defined $ret;
-        $ret;
-    #gem;
+    my @tokens = split m#(%[ctwo])(?=\W|$)#, $format;
+    for (my $i = 1; $i < @tokens; $i += 2) {
+        my $org = $tokens[$i];
+        $tokens[$i] = $args->{$FMAP->{$org}};
+        croak "'$org' must be specified '$FMAP->{$org}' field"
+            unless defined $tokens[$i];
+    }
 
-    return $format, @bind;
+    return join('',@tokens), @bind;
 }
 
 sub _quote {
