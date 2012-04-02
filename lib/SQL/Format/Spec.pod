@@ -375,4 +375,44 @@ For example:
   WHERE (`id` NOT BETWEEN lower(x) AND upper(?))
   ['stuff']
 
+=head2 order by
+
+  # scalar
+  %o
+  { options => { order_by => 'foo' } }
+  ORDER BY `foo`
+  []
+
+  # hashref
+  %o
+  { options => { order_by => { foo => 'DESC' } } }
+  ORDER BY `foo` DESC
+  []
+
+  # hashref multi value
+  %o
+  { options => { order_by => { foo => 'DESC', bar => 'ASC' } } }
+  ORDER BY `bar` ASC, `foo` DESC
+  []
+
+  # array mixed
+  %o
+  { options => { order_by => ['hoge', { foo => 'DESC', bar => 'ASC' }] } }
+  ORDER BY `hoge`, `bar` ASC, `foo` DESC
+  []
+
+=head2 limit offset
+
+  # limit only
+  %o
+  { options => { limit => 100 } }
+  LIMIT 100
+  []
+
+  # limit offset
+  %o
+  { options => { limit => 100, offset => 20 } }
+  LIMIT 100 OFFSET 20
+  []
+
 =cut

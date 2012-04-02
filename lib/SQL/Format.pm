@@ -10,17 +10,16 @@ use Carp qw(croak carp);
 
 our @EXPORT = qw(sqlf);
 
-our $SEPARATOR  = ', ';
-our $NAME_SEP   = '.';
-our $QUOTE_CHAR = '`';
+our $SEPARATOR     = ', ';
+our $NAME_SEP      = '.';
+our $QUOTE_CHAR    = '`';
+our $LIMIT_DIALECT = 'LimitOffset';
 
 my $FMAP = {
     '%c' => 'columns',
     '%t' => 'table',
     '%w' => 'where',
-    '%o' => 'order_by',
-    '%L' => 'limit',
-    '%O' => 'offset',
+    '%o' => 'options', # order_by, limit, offset
 };
 
 my $OP_ALIAS = {
@@ -30,6 +29,17 @@ my $OP_ALIAS = {
     -NOT_BETWEEN => 'NOT BETWEEN',
     -LIKE        => 'LIKE',
     -NOT_LIKE    => 'NOT LIKE',
+};
+
+use constant {
+    _LIMIT_OFFSET => 1,
+    _LIMIT_XY     => 2,
+    _LIMIT_YX     => 3,
+};
+my $LIMIT_DIALECT_MAP = {
+    LimitOffset => _LIMIT_OFFSET, # PostgreSQL, SQLite, MySQL 5.0
+    LimitXY     => _LIMIT_XY,     # MySQL
+    LimitYX     => _LIMIT_YX,     # SQLite
 };
 
 sub sqlf {
@@ -236,6 +246,69 @@ sub sqlf {
                 }
                 $no_paren ? $k : "($k)";
             } sort keys %$val;
+        }
+        elsif ($key eq 'options' && ref $val eq 'HASH') {
+            my @exprs;
+            if (defined(my $group_by = $val->{group_by})) {
+                # TODO
+            }
+            if (defined(my $having = $val->{having})) {
+                # TODO
+            }
+            if (defined(my $order_by = $val->{order_by})) {
+                my $ret = 'ORDER BY ';
+                if (ref $order_by eq 'HASH') {
+                    # order_by => { column => 'DESC' }
+                    $ret .= join $SEPARATOR, map {
+                        _quote($_).' '.$order_by->{$_}
+                    } sort keys %$order_by;
+                }
+                elsif (ref $order_by eq 'ARRAY') {
+                    # order_by => ['column1', { column2 => 'DESC' }]
+                    my @parts;
+                    for my $part (@$order_by) {
+                        if (ref $part eq 'HASH') {
+                            push @parts, join $SEPARATOR, map {
+                                _quote($_).' '.$part->{$_}
+                            } sort keys %$part;
+                        }
+                        else {
+                            push @parts, _quote($part);
+                        }
+                    }
+                    $ret .= join $SEPARATOR, @parts;
+                }
+                else {
+                    # order_by => 'column'
+                    $ret .= _quote($order_by);
+                }
+                push @exprs, $ret;
+            }
+            if (defined $val->{limit}) {
+                my $ret = 'LIMIT ';
+                if ($val->{offset}) { # defined and > 0
+                    my $limit_dialect = $LIMIT_DIALECT_MAP->{$LIMIT_DIALECT} || 0;
+                    if ($limit_dialect == _LIMIT_OFFSET) {
+                        $ret .= "$val->{limit} OFFSET $val->{offset}";
+                    }
+                    elsif ($limit_dialect == _LIMIT_XY) {
+                        $ret .= "$val->{offset}, $val->{limit}";
+                    }
+                    elsif ($limit_dialect == _LIMIT_YX) {
+                        $ret .= "$val->{limit}, $val->{offset}";
+                    }
+                    else {
+                        warn "Unkown LIMIT_DIALECT `$LIMIT_DIALECT`";
+                        $ret .= $val->{limit};
+                    }
+                }
+                else {
+                    $ret .= $val->{limit};
+                }
+                push @exprs, $ret;
+            }
+
+            $args->{$key} = join ' ', @exprs;
         }
     }
 
