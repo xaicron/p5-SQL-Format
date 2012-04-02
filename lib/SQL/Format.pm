@@ -412,15 +412,21 @@ sub insert {
 
 sub update {
     my ($self, $table, $args, $where, $opts) = @_;
-    my $prefix = $opts->{prefix} || 'UPDATE';
-    my $quote_char = $self->{quote_char};
-    my $quoted_tale = "$quote_char$table$quote_char";
+    croak 'Usage: $sqlf->update($table \%args|\@args [, \%where, \%opts])' unless defined $table && ref $args;
+
+    local $SEPARATOR     = $self->{separator};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+
+    my $prefix       = delete $opts->{prefix} || 'UPDATE';
+    my $quoted_table = _quote($table);
 
     my @args = ref $args eq 'HASH' ? %$args : @$args;
     my (@columns, @bind_params);
-    for (my ($i, $l) = (0, scalar @args); $i < $l; $i += 2) {
+    for (my $i = 0; $i < @args; $i += 2) {
         my ($col, $val) = ($args[$i], $args[$i+1]);
-        my $quoted_col = "$quote_char$col$quote_char";
+        my $quoted_col = _quote($col);
         if (ref $val eq 'SCALAR') {
             # foo => { bar => \'NOW()' }
             push @columns, "$quoted_col = $$val";
@@ -438,23 +444,18 @@ sub update {
         }
     }
 
-    my $format = "$prefix $quoted_tale SET ".join($self->{separator}, @columns);
-    if ($where) {
+    my $format = "$prefix $quoted_table SET ".join($self->{separator}, @columns);
+
+    if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
     }
-    if ($opts->{order_by}) {
-        # TODO
-    }
-    if ($opts->{limit}) {
-        # TODO
+    if (keys %$opts) {
+        $format .= ' %o';
     }
 
-    local $SEPARATOR  = $self->{separator};
-    local $NAME_SEP   = $self->{name_sep};
-    local $QUOTE_CHAR = $self->{quote_char};
     my ($stmt, @bind) = sqlf($format, {
-        %$opts,
-        where => $where,
+        options => $opts,
+        where   => $where,
     });
 
     return $stmt, (@bind_params, @bind);
