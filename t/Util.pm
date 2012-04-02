@@ -3,8 +3,10 @@ use strict;
 use warnings;
 use Exporter 'import';
 use IO::Handle;
+use SQL::Format ();
+use Test::More;
 
-our @EXPORT = qw(capture_warn mk_errstr test_level);
+our @EXPORT = qw(capture_warn mk_errstr mk_test);
 
 sub capture_warn(&) {
     my $code = shift;
@@ -23,6 +25,23 @@ sub mk_errstr {
     $spec = quotemeta $spec;
     $key  = quotemeta $key;
     return qr/'$spec' must be specified '$key' field/;
+}
+
+sub mk_test {
+    my $method = shift;
+    sub {
+        local $Test::Builder::Level = $Test::Builder::Level + 1;
+        my %specs = @_;
+        my ($input, $expects, $desc, $instance) =
+            @specs{qw/input expects desc instance/};
+
+        $instance ||= SQL::Format->new;
+        subtest "$method(): $desc" => sub {
+            my ($stmt, @bind) = $instance->$method(@$input);
+            is $stmt, $expects->{stmt};
+            is_deeply \@bind, $expects->{bind};
+        };
+    };
 }
 
 1;

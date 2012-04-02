@@ -1,24 +1,11 @@
 use strict;
 use warnings;
+use t::Util;
 use Test::More;
 
-use SQL::Format;
+my $test = mk_test 'select';
 
-sub test_select {
-    local $Test::Builder::Level = $Test::Builder::Level + 1;
-    my %specs = @_;
-    my ($input, $expects, $desc, $instance) =
-        @specs{qw/input expects desc instance/};
-
-    $instance ||= SQL::Format->new;
-    subtest $desc => sub {
-        my ($stmt, @bind) = $instance->select(@$input);
-        is $stmt, $expects->{stmt};
-        is_deeply \@bind, $expects->{bind};
-    };
-}
-
-test_select(
+$test->(
     desc    => 'no conditions',
     input   => [foo => 'bar'],
     expects => {
@@ -27,7 +14,7 @@ test_select(
     },
 );
 
-test_select(
+$test->(
     desc    => 'no conditions (astarisk)',
     input   => [foo => '*'],
     expects => {
@@ -36,7 +23,7 @@ test_select(
     },
 );
 
-test_select(
+$test->(
     desc    => 'no conditions (multi columns)',
     input   => [foo => [qw/bar baz/]],
     expects => {
@@ -45,7 +32,7 @@ test_select(
     },
 );
 
-test_select(
+$test->(
     desc    => 'add where',
     input   => [foo => [qw/bar baz/], { hoge => 'fuga' }],
     expects => {
@@ -54,7 +41,7 @@ test_select(
     },
 );
 
-test_select(
+$test->(
     desc    => 'add where, add order by',
     input   => [
         foo => [qw/bar baz/],
@@ -67,7 +54,7 @@ test_select(
     },
 );
 
-test_select(
+$test->(
     desc => 'limmit offset',
     input => [
         foo => '*',
@@ -76,6 +63,19 @@ test_select(
     ],
     expects => {
         stmt => 'SELECT * FROM `foo` LIMIT 1 OFFSET 2',
+        bind => [],
+    },
+);
+
+$test->(
+    desc  => 'custom prefix',
+    input => [
+        foo => '*',
+        undef,
+        { prefix => 'SELECT SQL_CALC_FOUND_ROWS' },
+    ],
+    expects => {
+        stmt => 'SELECT SQL_CALC_FOUND_ROWS * FROM `foo`',
         bind => [],
     },
 );
