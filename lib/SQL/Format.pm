@@ -371,7 +371,7 @@ sub select {
 
 sub insert {
     my ($self, $table, $values, $opts) = @_;
-    croak 'Usage: $sqlf->insert($table \%values|\@values, [, \%opts])' unless defined $table && ref $values;
+    croak 'Usage: $sqlf->insert($table \%values|\@values [, \%opts])' unless defined $table && ref $values;
 
     local $SEPARATOR     = $self->{separator};
     local $NAME_SEP      = $self->{name_sep};
