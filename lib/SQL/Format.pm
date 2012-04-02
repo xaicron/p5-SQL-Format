@@ -462,27 +462,27 @@ sub update {
 
 sub delete {
     my ($self, $table, $where, $opts) = @_;
-    my $prefix = $opts->{prefix} || 'DELETE FROM';
-    my $quote_char = $self->{quote_char};
-    my $quoted_tale = "$quote_char$table$quote_char";
+    croak 'Usage: $sqlf->delete($table [, \%where, \%opts])' unless defined $table;
 
-    my $format = "$prefix $quoted_tale";
-    if ($where) {
+    local $SEPARATOR     = $self->{separator};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+
+    my $prefix       = delete $opts->{prefix} || 'DELETE';
+    my $quoted_table = _quote($table);
+    my $format       = "$prefix FROM $quoted_table";
+
+    if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
     }
-    if ($opts->{order_by}) {
-        # TODO
-    }
-    if ($opts->{limit}) {
-        # TODO
+    if (keys %$opts) {
+        $format .= ' %o';
     }
 
-    local $SEPARATOR  = $self->{separator};
-    local $NAME_SEP   = $self->{name_sep};
-    local $QUOTE_CHAR = $self->{quote_char};
     sqlf($format, {
-        %$opts,
-        where => $where,
+        options => $opts,
+        where   => $where,
     });
 }
 
