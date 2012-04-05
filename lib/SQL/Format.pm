@@ -411,8 +411,8 @@ sub insert {
 }
 
 sub update {
-    my ($self, $table, $args, $where, $opts) = @_;
-    croak 'Usage: $sqlf->update($table \%args|\@args [, \%where, \%opts])' unless defined $table && ref $args;
+    my ($self, $table, $set, $where, $opts) = @_;
+    croak 'Usage: $sqlf->update($table \%set|\@set [, \%where, \%opts])' unless defined $table && ref $set;
 
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
@@ -422,10 +422,10 @@ sub update {
     my $prefix       = delete $opts->{prefix} || 'UPDATE';
     my $quoted_table = _quote($table);
 
-    my @args = ref $args eq 'HASH' ? %$args : @$args;
+    my @set = ref $set eq 'HASH' ? %$set : @$set;
     my (@columns, @bind_params);
-    for (my $i = 0; $i < @args; $i += 2) {
-        my ($col, $val) = ($args[$i], $args[$i+1]);
+    for (my $i = 0; $i < @set; $i += 2) {
+        my ($col, $val) = ($set[$i], $set[$i+1]);
         my $quoted_col = _quote($col);
         if (ref $val eq 'SCALAR') {
             # foo => { bar => \'NOW()' }
