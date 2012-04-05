@@ -407,7 +407,7 @@ sub insert {
              . '('.join(', ', @columns).') '
              . 'VALUES ('.join($self->{separator}, @bind_cols).')';
 
-    return ($stmt, @bind_params);
+    return $stmt, @bind_params;
 }
 
 sub update {
