@@ -10,7 +10,7 @@ use Carp qw(croak carp);
 
 our @EXPORT = qw(sqlf);
 
-our $SEPARATOR     = ', ';
+our $DELIMITER     = ', ';
 our $NAME_SEP      = '.';
 our $QUOTE_CHAR    = '`';
 our $LIMIT_DIALECT = 'LimitOffset';
@@ -55,7 +55,7 @@ sub sqlf {
             }
             elsif (ref $val eq 'ARRAY') {
                 if (@$val) {
-                    $args->{$key} = join $SEPARATOR, map { _quote($_) } @$val;
+                    $args->{$key} = join $DELIMITER, map { _quote($_) } @$val;
                 }
                 else {
                     $args->{$key} = '*';
@@ -70,7 +70,7 @@ sub sqlf {
         }
         elsif ($key eq 'table') {
             if (ref $val eq 'ARRAY') {
-                $args->{$key} = join $SEPARATOR, map { _quote($_) } @$val;
+                $args->{$key} = join $DELIMITER, map { _quote($_) } @$val;
             }
             elsif (defined $val) {
                 $args->{$key} = _quote($val);
@@ -119,7 +119,7 @@ sub sqlf {
                     }
                     else {
                         # [qw/1 2 3/]
-                        $k .= ' IN ('.join($SEPARATOR, ('?')x@$v).')';
+                        $k .= ' IN ('.join($DELIMITER, ('?')x@$v).')';
                         push @bind, @$v;
                     }
                 }
@@ -136,7 +136,7 @@ sub sqlf {
                             }
                             else {
                                 # { IN => [qw/1 2 3/] }
-                                $k .= " $op (".join($SEPARATOR, ('?')x@$v).')';
+                                $k .= " $op (".join($DELIMITER, ('?')x@$v).')';
                                 push @bind, @$v;
                             }
                         }
@@ -259,7 +259,7 @@ sub sqlf {
                 my $ret = 'ORDER BY ';
                 if (ref $order_by eq 'HASH') {
                     # order_by => { column => 'DESC' }
-                    $ret .= join $SEPARATOR, map {
+                    $ret .= join $DELIMITER, map {
                         _quote($_).' '.$order_by->{$_}
                     } sort keys %$order_by;
                 }
@@ -268,7 +268,7 @@ sub sqlf {
                     my @parts;
                     for my $part (@$order_by) {
                         if (ref $part eq 'HASH') {
-                            push @parts, join $SEPARATOR, map {
+                            push @parts, join $DELIMITER, map {
                                 _quote($_).' '.$part->{$_}
                             } sort keys %$part;
                         }
@@ -276,7 +276,7 @@ sub sqlf {
                             push @parts, _quote($part);
                         }
                     }
-                    $ret .= join $SEPARATOR, @parts;
+                    $ret .= join $DELIMITER, @parts;
                 }
                 else {
                     # order_by => 'column'
@@ -336,7 +336,7 @@ sub _quote {
 
 sub new {
     my ($class, %args) = @_;
-    $args{separator}     = $SEPARATOR     unless defined $args{separator};
+    $args{delimiter}     = $DELIMITER     unless defined $args{delimiter};
     $args{name_sep}      = $NAME_SEP      unless defined $args{name_sep};
     $args{quote_char}    = $QUOTE_CHAR    unless defined $args{quote_char};
     $args{limit_dialect} = $LIMIT_DIALECT unless defined $args{limit_dialect};
@@ -347,7 +347,7 @@ sub select {
     my ($self, $table, $cols, $where, $opts) = @_;
     croak 'Usage: $sqlf->select($table [, \@cols, \%where, \%opts])' unless defined $table;
 
-    local $SEPARATOR     = $self->{separator};
+    local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
@@ -373,7 +373,7 @@ sub insert {
     my ($self, $table, $values, $opts) = @_;
     croak 'Usage: $sqlf->insert($table \%values|\@values [, \%opts])' unless defined $table && ref $values;
 
-    local $SEPARATOR     = $self->{separator};
+    local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
@@ -405,7 +405,7 @@ sub insert {
 
     my $stmt = "$prefix $quoted_table "
              . '('.join(', ', @columns).') '
-             . 'VALUES ('.join($self->{separator}, @bind_cols).')';
+             . 'VALUES ('.join($self->{delimiter}, @bind_cols).')';
 
     return $stmt, @bind_params;
 }
@@ -414,7 +414,7 @@ sub update {
     my ($self, $table, $args, $where, $opts) = @_;
     croak 'Usage: $sqlf->update($table \%args|\@args [, \%where, \%opts])' unless defined $table && ref $args;
 
-    local $SEPARATOR     = $self->{separator};
+    local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
@@ -444,7 +444,7 @@ sub update {
         }
     }
 
-    my $format = "$prefix $quoted_table SET ".join($self->{separator}, @columns);
+    my $format = "$prefix $quoted_table SET ".join($self->{delimiter}, @columns);
 
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
@@ -465,7 +465,7 @@ sub delete {
     my ($self, $table, $where, $opts) = @_;
     croak 'Usage: $sqlf->delete($table [, \%where, \%opts])' unless defined $table;
 
-    local $SEPARATOR     = $self->{separator};
+    local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
