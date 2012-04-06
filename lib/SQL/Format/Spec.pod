@@ -375,6 +375,58 @@ For example:
   WHERE (`id` NOT BETWEEN lower(x) AND upper(?))
   ['stuff']
 
+=head2 group by
+
+  # scalar
+  %o
+  { options => { group_by => 'foo' } }
+  GROUP BY `foo`
+  []
+
+  # undef
+  %o
+  { options => { group_by => undef } }
+  GROUP BY NULL
+  []
+
+  # hashref
+  %o
+  { options => { group_by => { foo => 'DESC' } } }
+  GROUP BY `foo` DESC
+  []
+
+  # hashref -asc
+  %o
+  { options => { group_by => { -asc => 'foo' } } }
+  GROUP BY `foo` ASC
+  []
+
+  # hashref multi value
+  %o
+  { options => { group_by => { foo => 'DESC', -asc => 'bar' } } }
+  GROUP BY `bar` ASC, `foo` DESC
+  []
+
+  # array mixed
+  %o
+  { options => { group_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] } }
+  GROUP BY `hoge`, `bar` ASC, `foo` DESC
+  []
+
+=head2 having (same as where)
+
+  # simple
+  %o
+  { options => { having => { foo => 'bar' } } }
+  HAVING (`foo` = ?)
+  [qw/bar/]
+
+  # with where
+  WHERE %w %o
+  { where => { foo => 'bar' }, options => { having => { hoge => 'fuga' } } }
+  WHERE (`foo` = ?) HAVING (`hoge` = ?)
+  [qw/bar fuga/]
+
 =head2 order by
 
   # scalar
@@ -383,21 +435,33 @@ For example:
   ORDER BY `foo`
   []
 
+  # undef
+  %o
+  { options => { order_by => undef } }
+  ORDER BY NULL
+  []
+
   # hashref
   %o
   { options => { order_by => { foo => 'DESC' } } }
   ORDER BY `foo` DESC
   []
 
+  # hashref -asc
+  %o
+  { options => { order_by => { -asc => 'foo' } } }
+  ORDER BY `foo` ASC
+  []
+
   # hashref multi value
   %o
-  { options => { order_by => { foo => 'DESC', bar => 'ASC' } } }
+  { options => { order_by => { foo => 'DESC', -asc => 'bar' } } }
   ORDER BY `bar` ASC, `foo` DESC
   []
 
   # array mixed
   %o
-  { options => { order_by => ['hoge', { foo => 'DESC', bar => 'ASC' }] } }
+  { options => { order_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] } }
   ORDER BY `hoge`, `bar` ASC, `foo` DESC
   []
 
