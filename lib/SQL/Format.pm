@@ -391,12 +391,16 @@ sub select {
     local $LIMIT_DIALECT = $self->{limit_dialect};
 
     my $prefix = delete $opts->{prefix} || 'SELECT';
+    my $suffix = delete $opts->{suffix};
     my $format = "$prefix %c FROM %t";
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
     }
     if (keys %$opts) {
         $format .= ' %o';
+    }
+    if ($suffix) {
+        $format .= " $suffix";
     }
 
     sqlf($format, {

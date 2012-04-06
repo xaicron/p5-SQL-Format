@@ -80,4 +80,17 @@ $test->(
     },
 );
 
+$test->(
+    desc  => 'suffix',
+    input => [
+        foo => '*',
+        { hoge => 'fuga' },
+        { suffix => 'FOR UPDATE' },
+    ],
+    expects => {
+        stmt => 'SELECT * FROM `foo` WHERE (`hoge` = ?) FOR UPDATE',
+        bind => [qw/fuga/],
+    },
+);
+
 done_testing;
