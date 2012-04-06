@@ -421,11 +421,11 @@ For example:
   HAVING (`foo` = ?)
   [qw/bar/]
 
-  # with where
-  WHERE %w %o
-  { where => { foo => 'bar' }, options => { having => { hoge => 'fuga' } } }
-  WHERE (`foo` = ?) HAVING (`hoge` = ?)
-  [qw/bar fuga/]
+  # with group by
+  %o
+  { options => { having => { 'SUM(foo)' => { '>=' => 10 } }, group_by => 'bar' } }
+  GROUP BY `bar` HAVING (SUM(foo) >= ?)
+  [qw/10/]
 
 =head2 order by
 

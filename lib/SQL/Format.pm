@@ -320,7 +320,8 @@ sub _quote {
     return $$stuff if ref $stuff eq 'SCALAR';
     return $stuff unless $QUOTE_CHAR && $NAME_SEP;
     return $stuff if $stuff eq '*';
-    return $stuff if substr($stuff, 0, 1) eq $QUOTE_CHAR; # skip maybe quoted
+    return $stuff if substr($stuff, 0, 1) eq $QUOTE_CHAR; # skip if maybe quoted
+    return $stuff if $stuff =~ /\(/; # skip if maybe used function
     return join $NAME_SEP, map {
         "$QUOTE_CHAR$_$QUOTE_CHAR"
     } split /\Q$NAME_SEP\E/, $stuff;
