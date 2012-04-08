@@ -539,15 +539,470 @@ __END__
 
 =head1 NAME
 
-SQL::Format -
+SQL::Format - Yet yet another SQL builder
 
 =head1 SYNOPSIS
 
   use SQL::Format;
 
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
+      table   => 'foo',
+      columns => [qw/bar baz/],
+      where   => {
+          hoge => 'fuga',
+          piyo => [qw/100 200 300/],
+      },
+  };
+  # $stmt: SELECT `bar`, `baz` FROM `foo` WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
+  # @bind: ('fuga', 100, 200, 300);
+
+  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w %o', {
+      table   => 'foo',
+      columns => '*',
+      where   => { hoge => 'fuga' },
+      options => {
+          order_by => { bar => 'DESC' },
+          limit    => 100,
+          offset   => 10,
+      },
+  };
+  # $stmt: SELECT * FROM `foo` WHERE (`hoge` = ?) ORDER BY `bar` DESC LIMIT 100 OFFSET 10
+  # @bind: (`fuga`)
+
+  my $sqlf = SQL::Format->new(
+      quote_char    => '',        # do not quote
+      limit_dialect => 'LimitXY', # mysql style limit-offset
+  );
+  ($stmt, @bind) = $sqlf->select(foo => [qw/bar baz/], {
+      hoge => 'fuga',
+  }, {
+      order_by => 'bar',
+      limit    => 100,
+      offset   => 10,
+  });
+  # $stmt: SELECT bar, baz FROM foo WHERE (hoge = ?) ORDER BY bar LIMIT 10, 100
+  # @bind: ('fuga')
+
+  ($stmt, @bind) = $sqlf->insert(foo => { bar => 'baz', hoge => 'fuga' });
+  # $stmt: INSERT INTO foo (bar, hoge) VALUES (?, ?)
+  # @bind: ('baz', 'fuga')
+
+  ($stmt, @bind) = $sqlf->update(foo => { bar => 'xxx' }, { hoge => 'fuga' });
+  # $stmt: UPDATE foo SET bar = ? WHERE hoge = ?
+  # @bind: ('xxx', 'fuga')
+
+  ($stmt, @bind) = $sqlf->delete(foo => { hoge => 'fuga' });
+  # $stmt: DELETE FROM foo WHERE (hoge = ?)
+  # @bind: ('fuga')
+
 =head1 DESCRIPTION
 
-SQL::Format is
+SQL::Format is a easy to SQL query building library.
+
+=head1 FUNCTIONS
+
+=head2 sqlf($format, \%args)
+
+Generate SQL from formatted output conversion.
+
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
+      table   => 'foo',
+      columns => [qw/bar baz/].
+      where   => {
+          hoge => 'fuga',
+          piyo => [100, 200, 300],
+      },
+  };
+  # $stmt: SELECT `foo` FROM `bar`, `baz WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
+  # @bind: ('fuga', 100, 200, 300)
+
+Currently implemented formatters are:
+
+=over
+
+=item %t
+
+This format is a table name.
+
+  ($stmt, @bind) = sqlf '%t', { table => 'table_name' };        # $stmt => `table_name`
+  ($stmt, @bind) = sqlf '%t', { table => [qw/tableA tableB/] }; # $stmt => `tableA`, `tableB`
+
+=item %c
+
+This format is a column name.
+
+  ($stmt, @bind) = sqlf '%c', { columns => 'column_name' };       # $stmt => `column_name`
+  ($stmt, @bind) = sqlf '%c', { columns => [qw/colA colB/] };     # $stmt => `colA`, `colB`
+  ($stmt, @bind) = sqlf '%c', { columns => '*' };                 # $stmt => *
+  ($stmt, @bind) = sqlf '%c', { columns => [\'COUNT(*)', colC] }; # $stmt => COUNT(*), `colC`
+
+=item %w
+
+This format is a where clause.
+
+  ($stmt, @bind) = sqlf '%w', {
+      where => { foo => 'bar' },
+  };
+  # $stmt: (`foo` = ?)
+  # @bind: ("bar")
+
+  ($stmt, @bind) = sqlf '%w', {
+      where => { foo => 'bar', baz => [qw/100 200 300/] },
+  }
+  # $stmt: (`baz` IN (?, ?, ?) AND (`foo` = ?)
+  # @bind: (100, 200, 300, 'bar')
+
+=item %o
+
+This format is a options. Currently specified are:
+
+=over
+
+=item limit
+
+This option makes C<< LIMIT $n >> clause.
+
+  ($stmt, @bind) = sqlf '%o', { options => { limit => 100 } }; # $stmt => LIMIT 100
+
+=item offset
+
+This option makes C<< OFFSET $n >> clause. You must be specified both limit option.
+
+  ($stmt, @bind) = sqlf '%o', { options => { limit => 100, offset => 20 } }; # $stmt => LIMIT 100 OFFSET 20
+
+You can change limit dialects from C<< $SQL::Format::LIMIT_DIALECT >>.
+
+=item order_by
+
+This option makes C<< ORDER BY >> clause.
+
+  ($stmt, @bind) = sqlf '%o', { options => { order_by => 'foo' } };                       # $stmt => ORDER BY `foo`
+  ($stmt, @bind) = sqlf '%o', { options => { order_by => { foo => 'DESC' } } };           # $stmt => ORDER BY `foo` DESC
+  ($stmt, @bind) = sqlf '%o', { options => { order_by => ['foo', { -asc => 'bar' } ] } }; # $stmt => ORDER BY `foo`, `bar` ASC
+
+=item group_by
+
+This option makes C<< GROUP BY >> clause. Argument value some as C<< order_by >> option.
+
+  ($stmt, @bind) = sqlf '%o', { options => { group_by => { foo => 'DESC' } } }; # $stmt => GROUP BY `foo` DESC
+
+=item having
+
+This option makes C<< HAVING >> clause. Argument value some as C<< where >> clause.
+
+  ($stmt, @bind) = sqlf '%o', { options => { having => { foo => 'bar' } } };
+  # $stmt: HAVING (`foo` = ?)
+  # @bind: ('bar')
+
+=back
+
+=back
+
+For more examples, see also L<< SQL::Format::Spec >>.
+
+You can change the behavior by changing the global variable.
+
+=over
+
+=item $SQL::Format::QUOTE_CHAR : Str
+
+This is a quote character for table or column name.
+
+Default value is C<< "`" >>.
+
+=item $SQL::Format::NAME_SEP : Str
+
+This is a separate character for table or column name.
+
+Default value is C<< "." >>.
+
+=item $SQL::Format::DELIMITER Str
+
+This is a delimiter for between columns.
+
+Default value is C<< ", " >>.
+
+=item $SQL::Format::LIMIT_DIALECT : Str
+
+This is a types for dialects of limit-offset.
+
+You can choose are:
+
+  LimitOffset  # LIMIT 100 OFFSET 20  (SQLite / PostgreSQL / MySQL)
+  LimitXY      # LIMIT 20, 100        (MySQL)
+  LimitYX      # LIMIT 100, 20        (SQLite)
+
+Default value is C<< LimitOffset" >>.
+
+=back
+
+=head1 METHODS
+
+=head2 new([%options])
+
+Create a new instance of C<< SQL::Format >>.
+
+  my $sqlf = SQL::Format->new(
+      quote_char    => '',
+      limit_dialect => 'LimitXY',
+  );
+
+C<< %options >> specify are:
+
+=over
+
+=item quote_char : Str
+
+Default value is C<< $SQL::Format::QUOTE_CHAR >>.
+
+=item name_sep : Str
+
+This is a separate character for table or column name.
+
+Default value is C<< $SQL::Format::NAME_SEP >>.
+
+=item delimiter: Str
+
+This is a delimiter for between columns.
+
+Default value is C<< $SQL::Format::DELIMITER >>.
+
+=item limit_dialect : Str
+
+This is a types for dialects of limit-offset.
+
+Default value is C<< $SQL::Format::LIMIT_DIALECT >>.
+
+=back
+
+=head2 select($table|\@table, $column|\@columns [, \%where, \%opts ])
+
+This method returns SQL string and bind parameters for C<< SELECT >> statement.
+
+  my ($stmt, @bind) = $sqlf->select(foo => [qw/bar baz/], {
+      hoge => 'fuga',
+      piyo => [100, 200, 300],
+  });
+  # $stmt: SELECT `foo` FROM `bar`, `baz` WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
+  # @bind: ('fuga', 100, 200, 300)
+
+Argument details are:
+
+=over
+
+=item $table | \@table
+
+Same as C<< %t >> format.
+
+=item $column | \@columns
+
+Same as C<< %c >> format.
+
+=item \%where
+
+Same as C<< %w >> format.
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is prefix for SELECT statement.
+
+  my ($stmt, @bind) = $sqlf->select(foo => '*', { bar => 'baz' }, { prefix => 'SELECT SQL_CALC_FOUND_ROWS' });
+  # $stmt: SELECT SQL_CALC_FOUND_ROWS * FROM `foo` WHERE (`bar` = ?)
+  # @bind: ('baz')
+
+Default value is C<< SELECT >>.
+
+=item $opts->{suffix}
+
+Additional value for after the SELECT statement.
+
+  my ($stmt, @bind) = $sqlf->select(foo => '*', { bar => 'baz' }, { suffix => 'FOR UPDATE' });
+  # $stmt: SELECT * FROM `foo` WHERE (bar = ?) FOR UPDATE
+  # @bind: ('baz')
+
+Default value is C<< '' >>
+
+=item $opts->{limit}
+
+=item $opts->{offset}
+
+=item $opts->{order_by}
+
+=item $opts->{group_by}
+
+=item $opts->{having}
+
+See also C<< %o >> format.
+
+=back
+
+=back
+
+=head2 insert($table, \%values|\@values [, \%opts ])
+
+This method returns SQL string and bind parameters for C<< INSERT >> statement.
+
+  my ($stmt, @bind) = $sqlf->insert(foo => { bar => 'baz', hoge => 'fuga' });
+  # $stmt: INSERT INTO `foo` (`bar`, `hoge`) VALUES (?, ?)
+  # @bind: ('baz', 'fuga')
+
+  my ($stmt, @bind) = $sqlf->insert(foo => [
+      hoge => \'NOW()',
+      fuga => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'],
+  ]);
+  # $stmt: INSERT INTO `foo` (`hoge`, `fuga`) VALUES (NOW(), UNIX_TIMSTAMP(?))
+  # @bind: ('2012-12-12 12:12:12')
+
+Argument details are:
+
+=over
+
+=item $table
+
+This is a table name for target of INSERT.
+
+=item \%values | \@values
+
+This is a VALUES clause INSERT statement.
+
+Currently supported types are:
+
+  # \%values case
+  { foo => 'bar' }
+  { foo => \'NOW()' }
+  { foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] }
+
+  # \@values case
+  [ foo => 'bar' ]
+  [ foo => \'NOW()' ]
+  [ foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] ]
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is a prefix for INSERT statement.
+
+  my ($stmt, @bind) = $sqlf->insert(foo => { bar => baz }, { prefix => 'INSERT IGNORE' });
+  # $stmt: INSERT IGNORE INTO `foo` (`bar`) VALUES (?)
+  # @bind: ('baz')
+
+Default value is C<< INSERT >>.
+
+=back
+
+=back
+
+=head2 update($table, \%set|\@set [, \%where, \%opts ])
+
+This method returns SQL string and bind parameters for C<< UPDATE >> statement.
+
+  my ($stmt, @bind) = $sqlf->update(foo => { bar => 'baz' }, { hoge => 'fuga' });
+  # $stmt: UPDATE `foo` SET `bar` = ? WHERE (`hoge` = ?)
+  # @bind: ('baz', 'fuga')
+
+Argument details are:
+
+=over
+
+=item $table
+
+This is a table name for target of UPDATE.
+
+=item \%set | \@set
+
+This is a SET clause for INSERT statement.
+
+Currently supported types are:
+
+  # \%values case
+  { foo => 'bar' }
+  { foo => \'NOW()' }
+  { foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] }
+
+  # \@values case
+  [ foo => 'bar' ]
+  [ foo => \'NOW()' ]
+  [ foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] ]
+
+=item \%where
+
+Same as C<< %w >> format.
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is a prefix for UPDATE statement.
+
+  my ($stmt, @bind) = $sqlf->update(
+      'foo'                                # table
+      { bar    => 'baz' },                 # sets
+      { hoge   => 'fuga' },                # where
+      { prefix => 'UPDATE LOW_PRIORITY' }, # opts
+  );
+  # $stmt: UPDATE LOW_PRIORITY `foo` SET `bar` = ? WHERE (`hoge` = ?)
+  # @bind: ('baz', 'fuga')
+
+Default value is C<< UPDATE >>.
+
+=item $opts->{order_by}
+
+=item $opts->{limit}
+
+See also C<< %o >> format.
+
+=back
+
+=back
+
+=head2 delete($table [, \%where, \%opts ])
+
+This method returns SQL string and bind parameters for C<< DELETE >> statement.
+
+Argument details are:
+
+=over
+
+=item $table
+
+This is a table name for target of DELETE.
+
+=item \%where
+
+Same as C<< %w >> format.
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is a prefix for UPDATE statement.
+
+  my ($stmt, @bind) = $sqlf->delete(foo => { bar => 'baz' }, { prefix => 'DELETE LOW_PRIORITY' });
+  # $stmt: DELETE LOW_PRIORITY FROM `foo` WHERE (`bar` = ?)
+  # @bind: ('baz')
+
+Default value is C<< DELETE >>.
+
+=item $opts->{order_by}
+
+=item $opts->{limit}
+
+See also C<< %o >> format.
+
+=back
+
+=back
 
 =head1 AUTHOR
 
@@ -555,7 +1010,7 @@ xaicron E<lt>xaicron {at} cpan.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2011 - xaicron
+Copyright 2012 - xaicron
 
 =head1 LICENSE
 
@@ -563,5 +1018,9 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =head1 SEE ALSO
+
+L<< SQL::Maker >>
+
+L<< SQL::Abstract >>
 
 =cut
