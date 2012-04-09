@@ -6,7 +6,6 @@ use lib::xi;
 use SQL::Abstract;
 use SQL::Maker;
 use SQL::Format;
-use SQL::String;
 use SQL::Object qw(sql_obj);
 use SQL::Interp qw(sql_interp);
 use Benchmark qw(cmpthese :hireswallclock);
