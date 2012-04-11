@@ -375,11 +375,26 @@ sub _sort_expr {
 
 sub new {
     my ($class, %args) = @_;
-    $args{delimiter}     = $DELIMITER     unless defined $args{delimiter};
-    $args{name_sep}      = $NAME_SEP      unless defined $args{name_sep};
-    $args{quote_char}    = $QUOTE_CHAR    unless defined $args{quote_char};
-    $args{limit_dialect} = $LIMIT_DIALECT unless defined $args{limit_dialect};
-    bless { %args }, $class;
+
+    if (exists $args{driver} && defined $args{driver}) {
+        my $driver = lc $args{driver};
+        unless (defined $args{quote_char}) {
+            $args{quote_char} = $driver eq 'mysql' ? '`' : '"';
+        }
+        unless (defined $args{limit_dialect}) {
+            $args{limit_dialect} =
+                $driver eq 'mysql'  ? 'LimitXY' :
+                $driver eq 'sqlite' ? 'LimitYX' : 'LimitOffset';
+        }
+    }
+
+    bless {
+        delimiter     => $DELIMITER,
+        name_sep      => $NAME_SEP,
+        quote_char    => $QUOTE_CHAR,
+        limit_dialect => $LIMIT_DIALECT,
+        %args,
+    }, $class;
 }
 
 sub select {
