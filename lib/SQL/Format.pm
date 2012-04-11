@@ -60,7 +60,31 @@ sub sqlf {
         }
         elsif (ref $val eq 'ARRAY') {
             if (@$val) {
-                $args->{$key} = join $DELIMITER, map { _quote($_) } @$val;
+                $args->{$key} = join $DELIMITER, map {
+                    my $ret;
+                    my $ref = ref $_;
+                    if ($ref eq 'HASH') {
+                        my ($term, $col) = %$_;
+                        $ret = _quote($term).' AS '._quote($col);
+                    }
+                    elsif ($ref eq 'ARRAY') {
+                        my ($term, $col) = @$_;
+                        $ret = (
+                            ref $term eq 'SCALAR' ? $$term : _quote($term)
+                        ).' AS '._quote($col);
+                    }
+                    elsif ($ref eq 'REF' && ref $$_ eq 'ARRAY') {
+                        my ($term, $col, @params) = @{$$_};
+                        $ret = (
+                            ref $term eq 'SCALAR' ? $$term : _quote($term)
+                        ).' AS '._quote($col);
+                        push @bind, @params;
+                    }
+                    else {
+                        $ret = _quote($_)
+                    }
+                    $ret;
+                } @$val;
             }
             else {
                 $args->{$key} = '*';

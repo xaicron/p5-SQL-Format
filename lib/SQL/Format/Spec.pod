@@ -73,6 +73,30 @@ For example:
   SELECT foo AS bar, `baz` FROM table
   []
 
+  # hash in array
+  SELECT %c FROM table
+  { columns => [ { foo => 'bar' } ] }
+  SELECT `foo` AS `bar` FROM table
+  []
+
+  # array in array
+  SELECT %c FROM table
+  { columns => [ [foo => 'bar'] ] }
+  SELECT `foo` AS `bar` FROM table
+  []
+
+  # scalar ref into array in array
+  SELECT %c FROM table
+  { columns => [ [\'UNIX_TIMESTAMP()' => 'bar'] ] }
+  SELECT UNIX_TIMESTAMP() AS `bar` FROM table
+  []
+
+  # ref array in array
+  SELECT %c FROM table
+  { columns => [ \[\'UNIX_TIMESTAMP(?)' => 'bar', '2012-12-12 12:12:12'] ] }
+  SELECT UNIX_TIMESTAMP(?) AS `bar` FROM table
+  ['2012-12-12 12:12:12']
+
 =head2 table
 
   # scalar
