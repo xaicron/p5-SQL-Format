@@ -34,6 +34,11 @@ subtest 'name_sep and quoted' => sub {
     is $got, '`foo`.`bar`';
 };
 
+subtest 'skip function' => sub {
+    my $got = SQL::Format::_quote('UNIX_TIMSTAMP()');
+    is $got, 'UNIX_TIMSTAMP()';
+};
+
 subtest 'undefined quote_char' => sub {
     local $SQL::Format::QUOTE_CHAR = undef;
     my $got = SQL::Format::_quote('foo.bar');
