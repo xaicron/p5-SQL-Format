@@ -397,6 +397,15 @@ sub new {
     }, $class;
 }
 
+sub format {
+    my ($self, $format, $args) = @_;
+    local $DELIMITER     = $self->{delimiter};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+    sqlf($format, $args);
+}
+
 sub select {
     my ($self, $table, $cols, $where, $opts) = @_;
     croak 'Usage: $sqlf->select($table [, \@cols, \%where, \%opts])' unless defined $table;
@@ -789,6 +798,18 @@ This is a types for dialects of limit-offset.
 Default value is C<< $SQL::Format::LIMIT_DIALECT >>.
 
 =back
+
+=head2 format($format, \%args)
+
+This method same as C<< sqlf >> function.
+
+  my ($stmt, @bind) = $self->format('SELECT %c FROM %t WHERE %w', {
+      table   => 'foo',
+      columns => [qw/bar baz/],
+      where   => { hoge => 'fuga' },
+  });
+  # $stmt: SELECT `bar`, `baz` FROM ` foo` WHERE (`hoge` = ?)
+  # @bind: ('fuga')
 
 =head2 select($table|\@table, $column|\@columns [, \%where, \%opts ])
 
