@@ -482,7 +482,7 @@ sub insert {
             push @bind_cols, $$val;
         }
         elsif (ref $val eq 'REF' && ref $$val eq 'ARRAY') {
-            # foo => { bar => \['UNIX_TIMSTAMP(?)', '2011-11-11 11:11:11'] }
+            # foo => { bar => \['UNIX_TIMESTAMP(?)', '2011-11-11 11:11:11'] }
             my ($stmt, @sub_bind) = @{$$val};
             push @bind_cols, $stmt;
             push @bind_params, @sub_bind;
@@ -523,7 +523,7 @@ sub update {
             push @columns, "$quoted_col = $$val";
         }
         elsif (ref $val eq 'REF' && ref $$val eq 'ARRAY') {
-            # foo => { bar => \['UNIX_TIMSTAMP(?)', '2011-11-11 11:11:11'] }
+            # foo => { bar => \['UNIX_TIMESTAMP(?)', '2011-11-11 11:11:11'] }
             my ($stmt, @sub_bind) = @{$$val};
             push @columns, "$quoted_col = $stmt";
             push @bind_params, @sub_bind;
@@ -912,9 +912,9 @@ This method returns SQL string and bind parameters for C<< INSERT >> statement.
 
   my ($stmt, @bind) = $sqlf->insert(foo => [
       hoge => \'NOW()',
-      fuga => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'],
+      fuga => \['UNIX_TIMESTAMP()', '2012-12-12 12:12:12'],
   ]);
-  # $stmt: INSERT INTO `foo` (`hoge`, `fuga`) VALUES (NOW(), UNIX_TIMSTAMP(?))
+  # $stmt: INSERT INTO `foo` (`hoge`, `fuga`) VALUES (NOW(), UNIX_TIMESTAMP(?))
   # @bind: ('2012-12-12 12:12:12')
 
 Argument details are:
@@ -934,12 +934,12 @@ Currently supported types are:
   # \%values case
   { foo => 'bar' }
   { foo => \'NOW()' }
-  { foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] }
+  { foo => \['UNIX_TIMESTAMP()', '2012-12-12 12:12:12'] }
 
   # \@values case
   [ foo => 'bar' ]
   [ foo => \'NOW()' ]
-  [ foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] ]
+  [ foo => \['UNIX_TIMESTAMP()', '2012-12-12 12:12:12'] ]
 
 =item \%opts
 
@@ -984,12 +984,12 @@ Currently supported types are:
   # \%values case
   { foo => 'bar' }
   { foo => \'NOW()' }
-  { foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] }
+  { foo => \['UNIX_TIMESTAMP()', '2012-12-12 12:12:12'] }
 
   # \@values case
   [ foo => 'bar' ]
   [ foo => \'NOW()' ]
-  [ foo => \['UNIX_TIMSTAMP()', '2012-12-12 12:12:12'] ]
+  [ foo => \['UNIX_TIMESTAMP()', '2012-12-12 12:12:12'] ]
 
 =item \%where
 
