@@ -1113,6 +1113,8 @@ it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
+L<< SQL::Format::Spec >>
+
 L<< SQL::Maker >>
 
 L<< SQL::Abstract >>

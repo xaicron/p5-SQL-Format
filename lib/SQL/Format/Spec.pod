@@ -443,7 +443,7 @@ For example:
   WHERE (1=1)
   []
 
-=head2 hash mixed
+=head2 where hash mixed
 
   # mixied scalar
   WHERE %w
