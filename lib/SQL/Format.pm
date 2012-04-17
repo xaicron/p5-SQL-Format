@@ -160,112 +160,146 @@ sub sqlf {
                 }
             }
             elsif (ref $v eq 'HASH') {
-                (my $op, $v) = %$v;
-                $op = uc $op;
-                $op = $OP_ALIAS->{$op} || $op;
-                if ($op eq 'IN' || $op eq 'NOT IN') {
-                    my $ref = ref $v;
-                    if ($ref eq 'ARRAY') {
-                        unless (@$v) {
-                            # { IN => [] }
-                            $k = $op eq 'IN' ? '0=1' : '1=1';
+                my $no_paren = scalar keys %$v > 1 ? 0 : 1;
+                $k = join ' AND ', map {
+                    my $k = $k;
+                    my ($op, $v) = (uc($_), $v->{$_});
+                    $op = $OP_ALIAS->{$op} || $op;
+                    if ($op eq 'IN' || $op eq 'NOT IN') {
+                        my $ref = ref $v;
+                        if ($ref eq 'ARRAY') {
+                            unless (@$v) {
+                                # { IN => [] }
+                                $k = $op eq 'IN' ? '0=1' : '1=1';
+                            }
+                            else {
+                                # { IN => [qw/1 2 3/] }
+                                $k .= " $op (".join($DELIMITER, ('?')x@$v).')';
+                                push @bind, @$v;
+                            }
+                        }
+                        elsif ($ref eq 'REF') {
+                            # { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga']
+                            $k .= " $op (${$v}->[0])";
+                            push @bind, @{$$v}[1..$#$$v];
+                        }
+                        elsif ($ref eq 'SCALAR') {
+                            # { IN => \'SELECT foo FROM bar' }
+                            $k .= " $op ($$v)";
+                        }
+                        elsif (defined $v) {
+                            # { IN => 'foo' }
+                            $k .= $op eq 'IN' ? ' = ?' : ' <> ?';
+                            push @bind, $v;
                         }
                         else {
-                            # { IN => [qw/1 2 3/] }
-                            $k .= " $op (".join($DELIMITER, ('?')x@$v).')';
+                            # { IN => undef }
+                            $k .= $op eq 'IN' ? ' IS NULL' : ' IS NOT NULL';
+                        }
+                    }
+                    elsif ($op eq 'BETWEEN' || $op eq 'NOT BETWEEN') {
+                        my $ref = ref $v;
+                        if ($ref eq 'ARRAY') {
+                            # { BETWEEN => ['foo', 'bar'] }
+                            # { BETWEEN => [\'lower(x)', \['upper(?)', 'y']] }
+                            my ($va, $vb) = @$v;
+                            my @stmt;
+                            for my $value ($va, $vb) {
+                                if (ref $value eq 'SCALAR') {
+                                    push @stmt, $$value;
+                                }
+                                elsif (ref $value eq 'REF') {
+                                    push @stmt, ${$value}->[0];
+                                    push @bind, @{$$value}[1..$#$$value];
+                                }
+                                else {
+                                    push @stmt, '?';
+                                    push @bind, $value;
+                                }
+                            }
+                            $k .= " $op ".join ' AND ', @stmt;
+                        }
+                        elsif ($ref eq 'REF') {
+                            # { BETWEEN => \["? AND ?", 1, 2] }
+                            $k .= " $op ${$v}->[0]";
+                            push @bind, @{$$v}[1..$#$$v];
+                        }
+                        elsif ($ref eq 'SCALAR') {
+                            # { BETWEEN => \'lower(x) AND upper(y)' }
+                            $k .= " $op $$v";
+                        }
+                        else {
+                            # { BETWEEN => $scalar }
+                            # noop
+                        }
+                    }
+                    elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
+                        my $ref = ref $v;
+                        if ($ref eq 'ARRAY') {
+                            # { LIKE => ['%foo', 'bar%'] }
+                            # { LIKE => [\'%foo', \'bar%'] }
+                            my @stmt;
+                            for my $value (@$v) {
+                                if (ref $value eq 'SCALAR') {
+                                    push @stmt, $$value;
+                                }
+                                else {
+                                    push @stmt, '?';
+                                    push @bind, $value;
+                                }
+                            }
+                            $k = join ' OR ', map { "$k $op $_" } @stmt;
+                        }
+                        elsif ($ref eq 'SCALAR') {
+                            # { LIKE => \'"foo%"' }
+                            $k .= " $op $$v";
+                        }
+                        else {
+                            $k .= " $op ?";
+                            push @bind, $v;
+                        }
+                    }
+                    elsif (ref $v eq 'SCALAR') {
+                        # { '>' => \'foo' }
+                        $k .= " $op $$v";
+                    }
+                    elsif (ref $v eq 'ARRAY') {
+                        if ($op eq '=') {
+                            unless (@$v) {
+                                $k = '0=1';
+                            }
+                            else {
+                                $k .= " IN (".join($DELIMITER, ('?')x@$v).')';
+                                push @bind, @$v;
+                            }
+                        }
+                        elsif ($op eq '!=') {
+                            unless (@$v) {
+                                $k = '1=1';
+                            }
+                            else {
+                                $k .= " NOT IN (".join($DELIMITER, ('?')x@$v).')';
+                                push @bind, @$v;
+                            }
+                        }
+                        else {
+                            # { '>' => [qw/1 2 3/] }
+                            $k .= join ' OR ', map { "$op ?" } @$v;
                             push @bind, @$v;
                         }
                     }
-                    elsif ($ref eq 'REF') {
-                        # { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga']
-                        $k .= " $op (${$v}->[0])";
-                        push @bind, @{$$v}[1..$#$$v];
-                    }
-                    elsif ($ref eq 'SCALAR') {
-                        # { IN => \'SELECT foo FROM bar' }
-                        $k .= " $op ($$v)";
-                    }
-                    elsif (defined $v) {
-                        # { IN => 'foo' }
-                        $k .= $op eq 'IN' ? ' = ?' : ' <> ?';
-                        push @bind, $v;
-                    }
-                    else {
-                        # { IN => undef }
-                        $k .= $op eq 'IN' ? ' IS NULL' : ' IS NOT NULL';
-                    }
-                }
-                elsif ($op eq 'BETWEEN' || $op eq 'NOT BETWEEN') {
-                    my $ref = ref $v;
-                    if ($ref eq 'ARRAY') {
-                        # { BETWEEN => ['foo', 'bar'] }
-                        # { BETWEEN => [\'lower(x)', \['upper(?)', 'y']] }
-                        my ($va, $vb) = @$v;
-                        my @stmt;
-                        for my $value ($va, $vb) {
-                            if (ref $value eq 'SCALAR') {
-                                push @stmt, $$value;
-                            }
-                            elsif (ref $value eq 'REF') {
-                                push @stmt, ${$value}->[0];
-                                push @bind, @{$$value}[1..$#$$value];
-                            }
-                            else {
-                                push @stmt, '?';
-                                push @bind, $value;
-                            }
-                        }
-                        $k .= " $op ".join ' AND ', @stmt;
-                    }
-                    elsif ($ref eq 'REF') {
-                        # { BETWEEN => \["? AND ?", 1, 2] }
+                    elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
+                        # { '>' => \['UNIX_TIMESTAMP(?)', '2012-12-12 00:00:00'] }
                         $k .= " $op ${$v}->[0]";
                         push @bind, @{$$v}[1..$#$$v];
                     }
-                    elsif ($ref eq 'SCALAR') {
-                        # { BETWEEN => \'lower(x) AND upper(y)' }
-                        $k .= " $op $$v";
-                    }
                     else {
-                        # { BETWEEN => $scalar }
-                        # noop
-                    }
-                }
-                elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
-                    my $ref = ref $v;
-                    if ($ref eq 'ARRAY') {
-                        # { LIKE => ['%foo', 'bar%'] }
-                        # { LIKE => [\'%foo', \'bar%'] }
-                        my @stmt;
-                        for my $value (@$v) {
-                            if (ref $value eq 'SCALAR') {
-                                push @stmt, $$value;
-                            }
-                            else {
-                                push @stmt, '?';
-                                push @bind, $value;
-                            }
-                        }
-                        $k = join ' OR ', map { "$k $op $_" } @stmt;
-                    }
-                    elsif ($ref eq 'SCALAR') {
-                        # { LIKE => \'"foo%"' }
-                        $k .= " $op $$v";
-                    }
-                    else {
+                        # { '>' => 'foo' }
                         $k .= " $op ?";
                         push @bind, $v;
                     }
-                }
-                elsif (ref $v eq 'SCALAR') {
-                    # { '>' => \'foo' }
-                    $k .= " $op ($$v)";
-                }
-                else {
-                    # { '>' => 'foo' }
-                    $k .= " $op ?";
-                    push @bind, $v;
-                }
+                    $no_paren ? $k : "($k)";
+                } sort keys %$v;
             }
             elsif (ref $v eq 'SCALAR') {
                 # \'foo'
