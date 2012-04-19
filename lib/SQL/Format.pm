@@ -441,8 +441,7 @@ sub new {
         }
         unless (defined $args{limit_dialect}) {
             $args{limit_dialect} =
-                $driver eq 'mysql'  ? 'LimitXY' :
-                $driver eq 'sqlite' ? 'LimitYX' : 'LimitOffset';
+                $driver eq 'mysql'  ? 'LimitXY' : 'LimitOffset';
         }
     }
 
@@ -811,8 +810,8 @@ This is a types for dialects of limit-offset.
 You can choose are:
 
   LimitOffset  # LIMIT 100 OFFSET 20  (SQLite / PostgreSQL / MySQL)
-  LimitXY      # LIMIT 20, 100        (MySQL)
-  LimitYX      # LIMIT 100, 20        (SQLite)
+  LimitXY      # LIMIT 20, 100        (MySQL / SQLite)
+  LimitYX      # LIMIT 100, 20        (other)
 
 Default value is C<< LimitOffset" >>.
 

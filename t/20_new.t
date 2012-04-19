@@ -42,19 +42,19 @@ subtest 'driver sqlite' => sub {
     is $f->{delimiter}, ', ';
     is $f->{name_sep}, '.';
     is $f->{quote_char}, '"';
-    is $f->{limit_dialect}, 'LimitYX';
+    is $f->{limit_dialect}, 'LimitOffset';
 };
 
 subtest 'driver sqlite with other args' => sub {
     my $f = SQL::Format->new(
         driver        => 'SQLite',
         quote_char    => '',
-        limit_dialect => 'LimitOffset',
+        limit_dialect => 'LimitXY',
     );
     is $f->{delimiter}, ', ';
     is $f->{name_sep}, '.';
     is $f->{quote_char}, '';
-    is $f->{limit_dialect}, 'LimitOffset';
+    is $f->{limit_dialect}, 'LimitXY';
 };
 
 done_testing;
