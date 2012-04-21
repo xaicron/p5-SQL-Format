@@ -15,7 +15,9 @@ our $NAME_SEP      = '.';
 our $QUOTE_CHAR    = '`';
 our $LIMIT_DIALECT = 'LimitOffset';
 
-my $FMAP = {
+our $SELF = __PACKAGE__->new;
+
+my $SPEC_TO_METHOD_MAP = {
     '%c' => 'columns',
     '%t' => 'table',
     '%w' => 'where',
@@ -48,346 +50,358 @@ my $LIMIT_DIALECT_MAP = {
 };
 
 sub sqlf {
-    my ($format, $args) = @_;
-    $args ||= {};
+    my $format = shift;
 
     my @bind;
-    if (exists $args->{columns}) {
-        my $key = 'columns';
-        my $val = $args->{$key};
-        if (!defined $val) {
-            $args->{$key} = '*';
-        }
-        elsif (ref $val eq 'ARRAY') {
-            if (@$val) {
-                $args->{$key} = join $DELIMITER, map {
-                    my $ret;
-                    my $ref = ref $_;
-                    if ($ref eq 'HASH') {
-                        my ($term, $col) = %$_;
-                        $ret = _quote($term).' AS '._quote($col);
-                    }
-                    elsif ($ref eq 'ARRAY') {
-                        my ($term, $col) = @$_;
-                        $ret = (
-                            ref $term eq 'SCALAR' ? $$term : _quote($term)
-                        ).' AS '._quote($col);
-                    }
-                    elsif ($ref eq 'REF' && ref $$_ eq 'ARRAY') {
-                        my ($term, $col, @params) = @{$$_};
-                        $ret = (
-                            ref $term eq 'SCALAR' ? $$term : _quote($term)
-                        ).' AS '._quote($col);
-                        push @bind, @params;
-                    }
-                    else {
-                        $ret = _quote($_)
-                    }
-                    $ret;
-                } @$val;
-            }
-            else {
-                $args->{$key} = '*';
-            }
-        }
-        elsif (ref $val eq 'SCALAR') {
-            $args->{$key} = $$val;
-        }
-        else {
-            $args->{$key} = _quote($val);
-        }
+    my @tokens = split m#(%[ctwo])(?=\W|$)#, $format;
+    for (my $i = 1; $i < @tokens; $i += 2) {
+        my $spec = $tokens[$i];
+        my $method = $SPEC_TO_METHOD_MAP->{$spec};
+        croak "'$spec' does not supported format" unless $method;
+        croak sprintf "missing arguments nummber of %i and '%s' format in sqlf",
+            ($i + 1) / 2, $spec unless @_;
+
+        $tokens[$i] = $SELF->$method(shift(@_), \@bind);
     }
-    if (exists $args->{table}) {
-        my $key = 'table';
-        my $val = $args->{$key};
-        if (ref $val eq 'ARRAY') {
-            $args->{$key} = join $DELIMITER, map {
-                my $v = $_;
+
+    return join('',@tokens), @bind;
+}
+
+sub columns {
+    my ($self, $val, $bind) = @_;
+    my $ret;
+
+    if (!defined $val) {
+        $ret = '*';
+    }
+    elsif (ref $val eq 'ARRAY') {
+        if (@$val) {
+            $ret = join $DELIMITER, map {
                 my $ret;
-                if (ref $v eq 'HASH') {
-                    $ret = join $DELIMITER, map {
-                        _quote($_).' AS '._quote($v->{$_})
-                    } sort keys %$v;
+                my $ref = ref $_;
+                if ($ref eq 'HASH') {
+                    my ($term, $col) = %$_;
+                    $ret = _quote($term).' AS '._quote($col);
+                }
+                elsif ($ref eq 'ARRAY') {
+                    my ($term, $col) = @$_;
+                    $ret = (
+                        ref $term eq 'SCALAR' ? $$term : _quote($term)
+                    ).' AS '._quote($col);
+                }
+                elsif ($ref eq 'REF' && ref $$_ eq 'ARRAY') {
+                    my ($term, $col, @params) = @{$$_};
+                    $ret = (
+                        ref $term eq 'SCALAR' ? $$term : _quote($term)
+                    ).' AS '._quote($col);
+                    push @$bind, @params;
                 }
                 else {
-                    $ret = _quote($v);
+                    $ret = _quote($_)
                 }
                 $ret;
             } @$val;
         }
-        elsif (ref $val eq 'HASH') {
-            $args->{$key} = join $DELIMITER, map {
-                _quote($_).' AS '._quote($val->{$_})
-            } sort keys %$val;
-        }
-        elsif (defined $val) {
-            $args->{$key} = _quote($val);
-        }
         else {
-            # noop
+            $ret = '*';
         }
     }
-    # taken from SQL::Maker
-    if (ref $args->{where} eq 'HASH') {
-        my $key = 'where';
-        my $val = $args->{$key};
-        $args->{$key} = join ' AND ', map {
-            my $org_key  = $_;
-            my $no_paren = 0;
-            my ($k, $v) = (_quote($org_key), $val->{$_});
-            if (ref $v eq 'ARRAY')  {
-                if (
-                       ref $v->[0]
-                    or (($v->[0]||'') eq '-and')
-                    or (($v->[0]||'') eq '-or')
-                ) {
-                    # [-and => qw/foo bar baz/]
-                    # [-and => { '>' => 10 }, { '<' => 20 } ]
-                    # [-or  => qw/foo bar baz/]
-                    # [-or  => { '>' => 10 }, { '<' => 20 } ]
-                    # [{ '>' => 10 }, { '<' => 20 } ]
-                    my $logic = 'OR';
-                    my @values = @$v;
-                    if ($v->[0] && $v->[0] eq '-and') {
-                        $logic = 'AND';
-                        shift @values;
-                    }
-                    elsif ($v->[0] && $v->[0] eq '-or') {
-                        shift @values;
-                    }
-                    my @statements;
-                    for my $arg (@values) {
-                        my ($_stmt, @_bind) = sqlf('%w', {
-                            where => { $org_key => $arg },
-                        });
-                        push @statements, $_stmt;
-                        push @bind, @_bind;
-                    }
-                    $k = join " $logic ", @statements;
-                    $no_paren = 1;
-                }
-                elsif (@$v == 0) {
-                    # []
-                    $k = '0=1';
-                }
-                else {
-                    # [qw/1 2 3/]
-                    $k .= ' IN ('.join($DELIMITER, ('?')x@$v).')';
-                    push @bind, @$v;
-                }
-            }
-            elsif (ref $v eq 'HASH') {
-                my $no_paren = scalar keys %$v > 1 ? 0 : 1;
-                $k = join ' AND ', map {
-                    my $k = $k;
-                    my ($op, $v) = (uc($_), $v->{$_});
-                    $op = $OP_ALIAS->{$op} || $op;
-                    if ($op eq 'IN' || $op eq 'NOT IN') {
-                        my $ref = ref $v;
-                        if ($ref eq 'ARRAY') {
-                            unless (@$v) {
-                                # { IN => [] }
-                                $k = $op eq 'IN' ? '0=1' : '1=1';
-                            }
-                            else {
-                                # { IN => [qw/1 2 3/] }
-                                $k .= " $op (".join($DELIMITER, ('?')x@$v).')';
-                                push @bind, @$v;
-                            }
-                        }
-                        elsif ($ref eq 'REF') {
-                            # { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga']
-                            $k .= " $op (${$v}->[0])";
-                            push @bind, @{$$v}[1..$#$$v];
-                        }
-                        elsif ($ref eq 'SCALAR') {
-                            # { IN => \'SELECT foo FROM bar' }
-                            $k .= " $op ($$v)";
-                        }
-                        elsif (defined $v) {
-                            # { IN => 'foo' }
-                            $k .= $op eq 'IN' ? ' = ?' : ' <> ?';
-                            push @bind, $v;
-                        }
-                        else {
-                            # { IN => undef }
-                            $k .= $op eq 'IN' ? ' IS NULL' : ' IS NOT NULL';
-                        }
-                    }
-                    elsif ($op eq 'BETWEEN' || $op eq 'NOT BETWEEN') {
-                        my $ref = ref $v;
-                        if ($ref eq 'ARRAY') {
-                            # { BETWEEN => ['foo', 'bar'] }
-                            # { BETWEEN => [\'lower(x)', \['upper(?)', 'y']] }
-                            my ($va, $vb) = @$v;
-                            my @stmt;
-                            for my $value ($va, $vb) {
-                                if (ref $value eq 'SCALAR') {
-                                    push @stmt, $$value;
-                                }
-                                elsif (ref $value eq 'REF') {
-                                    push @stmt, ${$value}->[0];
-                                    push @bind, @{$$value}[1..$#$$value];
-                                }
-                                else {
-                                    push @stmt, '?';
-                                    push @bind, $value;
-                                }
-                            }
-                            $k .= " $op ".join ' AND ', @stmt;
-                        }
-                        elsif ($ref eq 'REF') {
-                            # { BETWEEN => \["? AND ?", 1, 2] }
-                            $k .= " $op ${$v}->[0]";
-                            push @bind, @{$$v}[1..$#$$v];
-                        }
-                        elsif ($ref eq 'SCALAR') {
-                            # { BETWEEN => \'lower(x) AND upper(y)' }
-                            $k .= " $op $$v";
-                        }
-                        else {
-                            # { BETWEEN => $scalar }
-                            # noop
-                        }
-                    }
-                    elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
-                        my $ref = ref $v;
-                        if ($ref eq 'ARRAY') {
-                            # { LIKE => ['%foo', 'bar%'] }
-                            # { LIKE => [\'%foo', \'bar%'] }
-                            my @stmt;
-                            for my $value (@$v) {
-                                if (ref $value eq 'SCALAR') {
-                                    push @stmt, $$value;
-                                }
-                                else {
-                                    push @stmt, '?';
-                                    push @bind, $value;
-                                }
-                            }
-                            $k = join ' OR ', map { "$k $op $_" } @stmt;
-                        }
-                        elsif ($ref eq 'SCALAR') {
-                            # { LIKE => \'"foo%"' }
-                            $k .= " $op $$v";
-                        }
-                        else {
-                            $k .= " $op ?";
-                            push @bind, $v;
-                        }
-                    }
-                    elsif (ref $v eq 'SCALAR') {
-                        # { '>' => \'foo' }
-                        $k .= " $op $$v";
-                    }
-                    elsif (ref $v eq 'ARRAY') {
-                        if ($op eq '=') {
-                            unless (@$v) {
-                                $k = '0=1';
-                            }
-                            else {
-                                $k .= " IN (".join($DELIMITER, ('?')x@$v).')';
-                                push @bind, @$v;
-                            }
-                        }
-                        elsif ($op eq '!=') {
-                            unless (@$v) {
-                                $k = '1=1';
-                            }
-                            else {
-                                $k .= " NOT IN (".join($DELIMITER, ('?')x@$v).')';
-                                push @bind, @$v;
-                            }
-                        }
-                        else {
-                            # { '>' => [qw/1 2 3/] }
-                            $k .= join ' OR ', map { "$op ?" } @$v;
-                            push @bind, @$v;
-                        }
-                    }
-                    elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
-                        # { '>' => \['UNIX_TIMESTAMP(?)', '2012-12-12 00:00:00'] }
-                        $k .= " $op ${$v}->[0]";
-                        push @bind, @{$$v}[1..$#$$v];
-                    }
-                    else {
-                        # { '>' => 'foo' }
-                        $k .= " $op ?";
-                        push @bind, $v;
-                    }
-                    $no_paren ? $k : "($k)";
+    elsif (ref $val eq 'SCALAR') {
+        $ret = $$val;
+    }
+    else {
+        $ret = _quote($val);
+    }
+
+    return $ret;
+}
+
+sub table {
+    my ($self, $val, $bind) = @_;
+    my $ret;
+
+    if (ref $val eq 'ARRAY') {
+        $ret = join $DELIMITER, map {
+            my $v = $_;
+            my $ret;
+            if (ref $v eq 'HASH') {
+                $ret = join $DELIMITER, map {
+                    _quote($_).' AS '._quote($v->{$_})
                 } sort keys %$v;
             }
-            elsif (ref $v eq 'SCALAR') {
-                # \'foo'
-                $k .= " $$v";
-            }
-            elsif (!defined $v) {
-                # undef
-                $k .= ' IS NULL';
-            }
             else {
-                # 'foo'
-                $k .= ' = ?';
-                push @bind, $v;
+                $ret = _quote($v);
             }
-            $no_paren ? $k : "($k)";
+            $ret;
+        } @$val;
+    }
+    elsif (ref $val eq 'HASH') {
+        $ret = join $DELIMITER, map {
+            _quote($_).' AS '._quote($val->{$_})
         } sort keys %$val;
     }
-    if (ref $args->{options} eq 'HASH') {
-        my $val = $args->{options};
-        my @exprs;
-        if (exists $val->{group_by}) {
-            my $ret = _sort_expr($val->{group_by});
-            push @exprs, 'GROUP BY '.$ret;
-        }
-        if (exists $val->{having}) {
-            my ($ret, @new_bind) = sqlf('%w', { where => $val->{having} });
-            push @exprs, 'HAVING '.$ret;
-            push @bind, @new_bind;
-        }
-        if (exists $val->{order_by}) {
-            my $ret = _sort_expr($val->{order_by});
-            push @exprs, 'ORDER BY '.$ret;
-        }
-        if (defined(my $group_by = $val->{group_by})) {
-        }
-        if (defined $val->{limit}) {
-            my $ret = 'LIMIT ';
-            if ($val->{offset}) { # defined and > 0
-                my $limit_dialect = $LIMIT_DIALECT_MAP->{$LIMIT_DIALECT} || 0;
-                if ($limit_dialect == _LIMIT_OFFSET) {
-                    $ret .= "$val->{limit} OFFSET $val->{offset}";
+    elsif (defined $val) {
+        $ret = _quote($val);
+    }
+    else {
+        # noop
+    }
+
+    return $ret;
+}
+
+sub where {
+    my ($self, $val, $bind) = @_;
+
+    return unless ref $val eq 'HASH';
+    my $ret = join ' AND ', map {
+        my $org_key  = $_;
+        my $no_paren = 0;
+        my ($k, $v) = (_quote($org_key), $val->{$_});
+        if (ref $v eq 'ARRAY')  {
+            if (
+                   ref $v->[0]
+                or (($v->[0]||'') eq '-and')
+                or (($v->[0]||'') eq '-or')
+            ) {
+                # [-and => qw/foo bar baz/]
+                # [-and => { '>' => 10 }, { '<' => 20 } ]
+                # [-or  => qw/foo bar baz/]
+                # [-or  => { '>' => 10 }, { '<' => 20 } ]
+                # [{ '>' => 10 }, { '<' => 20 } ]
+                my $logic = 'OR';
+                my @values = @$v;
+                if ($v->[0] && $v->[0] eq '-and') {
+                    $logic = 'AND';
+                    shift @values;
                 }
-                elsif ($limit_dialect == _LIMIT_XY) {
-                    $ret .= "$val->{offset}, $val->{limit}";
+                elsif ($v->[0] && $v->[0] eq '-or') {
+                    shift @values;
                 }
-                elsif ($limit_dialect == _LIMIT_YX) {
-                    $ret .= "$val->{limit}, $val->{offset}";
+                my @statements;
+                for my $arg (@values) {
+                    my ($_stmt, @_bind) = sqlf('%w', { $org_key => $arg });
+                    push @statements, $_stmt;
+                    push @$bind, @_bind;
                 }
-                else {
-                    warn "Unkown LIMIT_DIALECT `$LIMIT_DIALECT`";
-                    $ret .= $val->{limit};
-                }
+                $k = join " $logic ", @statements;
+                $no_paren = 1;
+            }
+            elsif (@$v == 0) {
+                # []
+                $k = '0=1';
             }
             else {
+                # [qw/1 2 3/]
+                $k .= ' IN ('.join($DELIMITER, ('?')x@$v).')';
+                push @$bind, @$v;
+            }
+        }
+        elsif (ref $v eq 'HASH') {
+            my $no_paren = scalar keys %$v > 1 ? 0 : 1;
+            $k = join ' AND ', map {
+                my $k = $k;
+                my ($op, $v) = (uc($_), $v->{$_});
+                $op = $OP_ALIAS->{$op} || $op;
+                if ($op eq 'IN' || $op eq 'NOT IN') {
+                    my $ref = ref $v;
+                    if ($ref eq 'ARRAY') {
+                        unless (@$v) {
+                            # { IN => [] }
+                            $k = $op eq 'IN' ? '0=1' : '1=1';
+                        }
+                        else {
+                            # { IN => [qw/1 2 3/] }
+                            $k .= " $op (".join($DELIMITER, ('?')x@$v).')';
+                            push @$bind, @$v;
+                        }
+                    }
+                    elsif ($ref eq 'REF') {
+                        # { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga']
+                        $k .= " $op (${$v}->[0])";
+                        push @$bind, @{$$v}[1..$#$$v];
+                    }
+                    elsif ($ref eq 'SCALAR') {
+                        # { IN => \'SELECT foo FROM bar' }
+                        $k .= " $op ($$v)";
+                    }
+                    elsif (defined $v) {
+                        # { IN => 'foo' }
+                        $k .= $op eq 'IN' ? ' = ?' : ' <> ?';
+                        push @$bind, $v;
+                    }
+                    else {
+                        # { IN => undef }
+                        $k .= $op eq 'IN' ? ' IS NULL' : ' IS NOT NULL';
+                    }
+                }
+                elsif ($op eq 'BETWEEN' || $op eq 'NOT BETWEEN') {
+                    my $ref = ref $v;
+                    if ($ref eq 'ARRAY') {
+                        # { BETWEEN => ['foo', 'bar'] }
+                        # { BETWEEN => [\'lower(x)', \['upper(?)', 'y']] }
+                        my ($va, $vb) = @$v;
+                        my @stmt;
+                        for my $value ($va, $vb) {
+                            if (ref $value eq 'SCALAR') {
+                                push @stmt, $$value;
+                            }
+                            elsif (ref $value eq 'REF') {
+                                push @stmt, ${$value}->[0];
+                                push @$bind, @{$$value}[1..$#$$value];
+                            }
+                            else {
+                                push @stmt, '?';
+                                push @$bind, $value;
+                            }
+                        }
+                        $k .= " $op ".join ' AND ', @stmt;
+                    }
+                    elsif ($ref eq 'REF') {
+                        # { BETWEEN => \["? AND ?", 1, 2] }
+                        $k .= " $op ${$v}->[0]";
+                        push @$bind, @{$$v}[1..$#$$v];
+                    }
+                    elsif ($ref eq 'SCALAR') {
+                        # { BETWEEN => \'lower(x) AND upper(y)' }
+                        $k .= " $op $$v";
+                    }
+                    else {
+                        # { BETWEEN => $scalar }
+                        # noop
+                    }
+                }
+                elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
+                    my $ref = ref $v;
+                    if ($ref eq 'ARRAY') {
+                        # { LIKE => ['%foo', 'bar%'] }
+                        # { LIKE => [\'%foo', \'bar%'] }
+                        my @stmt;
+                        for my $value (@$v) {
+                            if (ref $value eq 'SCALAR') {
+                                push @stmt, $$value;
+                            }
+                            else {
+                                push @stmt, '?';
+                                push @$bind, $value;
+                            }
+                        }
+                        $k = join ' OR ', map { "$k $op $_" } @stmt;
+                    }
+                    elsif ($ref eq 'SCALAR') {
+                        # { LIKE => \'"foo%"' }
+                        $k .= " $op $$v";
+                    }
+                    else {
+                        $k .= " $op ?";
+                        push @$bind, $v;
+                    }
+                }
+                elsif (ref $v eq 'SCALAR') {
+                    # { '>' => \'foo' }
+                    $k .= " $op $$v";
+                }
+                elsif (ref $v eq 'ARRAY') {
+                    if ($op eq '=') {
+                        unless (@$v) {
+                            $k = '0=1';
+                        }
+                        else {
+                            $k .= " IN (".join($DELIMITER, ('?')x@$v).')';
+                            push @$bind, @$v;
+                        }
+                    }
+                    elsif ($op eq '!=') {
+                        unless (@$v) {
+                            $k = '1=1';
+                        }
+                        else {
+                            $k .= " NOT IN (".join($DELIMITER, ('?')x@$v).')';
+                            push @$bind, @$v;
+                        }
+                    }
+                    else {
+                        # { '>' => [qw/1 2 3/] }
+                        $k .= join ' OR ', map { "$op ?" } @$v;
+                        push @$bind, @$v;
+                    }
+                }
+                elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
+                    # { '>' => \['UNIX_TIMESTAMP(?)', '2012-12-12 00:00:00'] }
+                    $k .= " $op ${$v}->[0]";
+                    push @$bind, @{$$v}[1..$#$$v];
+                }
+                else {
+                    # { '>' => 'foo' }
+                    $k .= " $op ?";
+                    push @$bind, $v;
+                }
+                $no_paren ? $k : "($k)";
+            } sort keys %$v;
+        }
+        elsif (ref $v eq 'SCALAR') {
+            # \'foo'
+            $k .= " $$v";
+        }
+        elsif (!defined $v) {
+            # undef
+            $k .= ' IS NULL';
+        }
+        else {
+            # 'foo'
+            $k .= ' = ?';
+            push @$bind, $v;
+        }
+        $no_paren ? $k : "($k)";
+    } sort keys %$val;
+
+    return $ret;
+}
+
+sub options {
+    my ($self, $val, $bind) = @_;
+
+    my @exprs;
+    if (exists $val->{group_by}) {
+        my $ret = _sort_expr($val->{group_by});
+        push @exprs, 'GROUP BY '.$ret;
+    }
+    if (exists $val->{having}) {
+        my ($ret, @new_bind) = sqlf('%w', $val->{having});
+        push @exprs, 'HAVING '.$ret;
+        push @$bind, @new_bind;
+    }
+    if (exists $val->{order_by}) {
+        my $ret = _sort_expr($val->{order_by});
+        push @exprs, 'ORDER BY '.$ret;
+    }
+    if (defined(my $group_by = $val->{group_by})) {
+    }
+    if (defined $val->{limit}) {
+        my $ret = 'LIMIT ';
+        if ($val->{offset}) { # defined and > 0
+            my $limit_dialect = $LIMIT_DIALECT_MAP->{$LIMIT_DIALECT} || 0;
+            if ($limit_dialect == _LIMIT_OFFSET) {
+                $ret .= "$val->{limit} OFFSET $val->{offset}";
+            }
+            elsif ($limit_dialect == _LIMIT_XY) {
+                $ret .= "$val->{offset}, $val->{limit}";
+            }
+            elsif ($limit_dialect == _LIMIT_YX) {
+                $ret .= "$val->{limit}, $val->{offset}";
+            }
+            else {
+                warn "Unkown LIMIT_DIALECT `$LIMIT_DIALECT`";
                 $ret .= $val->{limit};
             }
-            push @exprs, $ret;
         }
-
-        $args->{options} = join ' ', @exprs;
+        else {
+            $ret .= $val->{limit};
+        }
+        push @exprs, $ret;
     }
 
-    my @tokens = split m#(%[ctwo])(?=\W|$)#, $format;
-    for (my $i = 1; $i < @tokens; $i += 2) {
-        my $org = $tokens[$i];
-        $tokens[$i] = $args->{$FMAP->{$org}};
-        croak "'$org' must be specified '$FMAP->{$org}' field"
-            unless defined $tokens[$i];
-    }
-
-    return join('',@tokens), @bind;
+    return join ' ', @exprs;
 }
 
 sub _quote {
@@ -472,18 +486,20 @@ sub new {
 }
 
 sub format {
-    my ($self, $format, $args) = @_;
+    my $self = shift;
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
-    sqlf($format, $args);
+    goto &sqlf;
 }
 
 sub select {
     my ($self, $table, $cols, $where, $opts) = @_;
     croak 'Usage: $sqlf->select($table [, \@cols, \%where, \%opts])' unless defined $table;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -492,28 +508,27 @@ sub select {
     my $prefix = delete $opts->{prefix} || 'SELECT';
     my $suffix = delete $opts->{suffix};
     my $format = "$prefix %c FROM %t";
+    my @args   = ($cols, $table);
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
     if ($suffix) {
         $format .= " $suffix";
     }
 
-    sqlf($format, {
-        options => $opts,
-        table   => $table,
-        columns => $cols,
-        where   => $where,
-    });
+    sqlf($format, @args);
 }
 
 sub insert {
     my ($self, $table, $values, $opts) = @_;
     croak 'Usage: $sqlf->insert($table \%values|\@values [, \%opts])' unless defined $table && ref $values;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -555,6 +570,7 @@ sub update {
     my ($self, $table, $set, $where, $opts) = @_;
     croak 'Usage: $sqlf->update($table \%set|\@set [, \%where, \%opts])' unless defined $table && ref $set;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -587,17 +603,17 @@ sub update {
 
     my $format = "$prefix $quoted_table SET ".join($self->{delimiter}, @columns);
 
+    my @args;
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
 
-    my ($stmt, @bind) = sqlf($format, {
-        options => $opts,
-        where   => $where,
-    });
+    my ($stmt, @bind) = sqlf($format, @args);
 
     return $stmt, (@bind_params, @bind);
 }
@@ -606,6 +622,7 @@ sub delete {
     my ($self, $table, $where, $opts) = @_;
     croak 'Usage: $sqlf->delete($table [, \%where, \%opts])' unless defined $table;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -615,17 +632,17 @@ sub delete {
     my $quoted_table = _quote($table);
     my $format       = "$prefix FROM $quoted_table";
 
+    my @args;
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
 
-    sqlf($format, {
-        options => $opts,
-        where   => $where,
-    });
+    sqlf($format, @args);
 }
 
 1;
@@ -643,27 +660,27 @@ SQL::Format - Yet yet another SQL builder
 
   use SQL::Format;
 
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/],
-      where   => {
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/bar baz/], # %c
+      'foo',         # %t
+      {
           hoge => 'fuga',
           piyo => [qw/100 200 300/],
-      },
-  };
+      },             # %w
+  );
   # $stmt: SELECT `bar`, `baz` FROM `foo` WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
   # @bind: ('fuga', 100, 200, 300);
 
-  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w %o', {
-      table   => 'foo',
-      columns => '*',
-      where   => { hoge => 'fuga' },
-      options => {
+  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w %o' => (
+      '*',                # %c
+      'foo',              # %t
+      { hoge => 'fuga' }, # w
+      {
           order_by => { bar => 'DESC' },
           limit    => 100,
           offset   => 10,
-      },
-  };
+      },                  # %o
+  );
   # $stmt: SELECT * FROM `foo` WHERE (`hoge` = ?) ORDER BY `bar` DESC LIMIT 100 OFFSET 10
   # @bind: (`fuga`)
 
@@ -699,18 +716,18 @@ SQL::Format is a easy to SQL query building library.
 
 =head1 FUNCTIONS
 
-=head2 sqlf($format, \%args)
+=head2 sqlf($format, @args)
 
 Generate SQL from formatted output conversion.
 
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/].
-      where   => {
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/bar baz/],   # %c
+      'foo',           # %t
+      {
           hoge => 'fuga',
           piyo => [100, 200, 300],
-      },
-  };
+      },               # %w
+  );
   # $stmt: SELECT `foo` FROM `bar`, `baz WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
   # @bind: ('fuga', 100, 200, 300)
 
@@ -722,31 +739,30 @@ Currently implemented formatters are:
 
 This format is a table name.
 
-  ($stmt, @bind) = sqlf '%t', { table => 'table_name' };        # $stmt => `table_name`
-  ($stmt, @bind) = sqlf '%t', { table => [qw/tableA tableB/] }; # $stmt => `tableA`, `tableB`
+  ($stmt, @bind) = sqlf '%t', 'table_name';        # $stmt => `table_name`
+  ($stmt, @bind) = sqlf '%t', [qw/tableA tableB/]; # $stmt => `tableA`, `tableB`
 
 =item %c
 
 This format is a column name.
 
-  ($stmt, @bind) = sqlf '%c', { columns => 'column_name' };       # $stmt => `column_name`
-  ($stmt, @bind) = sqlf '%c', { columns => [qw/colA colB/] };     # $stmt => `colA`, `colB`
-  ($stmt, @bind) = sqlf '%c', { columns => '*' };                 # $stmt => *
-  ($stmt, @bind) = sqlf '%c', { columns => [\'COUNT(*)', colC] }; # $stmt => COUNT(*), `colC`
+  ($stmt, @bind) = sqlf '%c', 'column_name';       # $stmt => `column_name`
+  ($stmt, @bind) = sqlf '%c', [qw/colA colB/];     # $stmt => `colA`, `colB`
+  ($stmt, @bind) = sqlf '%c', '*';                 # $stmt => *
+  ($stmt, @bind) = sqlf '%c', [\'COUNT(*)', colC]; # $stmt => COUNT(*), `colC`
 
 =item %w
 
 This format is a where clause.
 
-  ($stmt, @bind) = sqlf '%w', {
-      where => { foo => 'bar' },
-  };
+  ($stmt, @bind) = sqlf '%w', { foo => 'bar' };
   # $stmt: (`foo` = ?)
   # @bind: ("bar")
 
   ($stmt, @bind) = sqlf '%w', {
-      where => { foo => 'bar', baz => [qw/100 200 300/] },
-  }
+      foo => 'bar',
+      baz => [qw/100 200 300/],
+  };
   # $stmt: (`baz` IN (?, ?, ?) AND (`foo` = ?)
   # @bind: (100, 200, 300, 'bar')
 
@@ -760,13 +776,13 @@ This format is a options. Currently specified are:
 
 This option makes C<< LIMIT $n >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { limit => 100 } }; # $stmt => LIMIT 100
+  ($stmt, @bind) = sqlf '%o', { limit => 100 }; # $stmt => LIMIT 100
 
 =item offset
 
 This option makes C<< OFFSET $n >> clause. You must be specified both limit option.
 
-  ($stmt, @bind) = sqlf '%o', { options => { limit => 100, offset => 20 } }; # $stmt => LIMIT 100 OFFSET 20
+  ($stmt, @bind) = sqlf '%o', { limit => 100, offset => 20 }; # $stmt => LIMIT 100 OFFSET 20
 
 You can change limit dialects from C<< $SQL::Format::LIMIT_DIALECT >>.
 
@@ -774,21 +790,21 @@ You can change limit dialects from C<< $SQL::Format::LIMIT_DIALECT >>.
 
 This option makes C<< ORDER BY >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => 'foo' } };                       # $stmt => ORDER BY `foo`
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => { foo => 'DESC' } } };           # $stmt => ORDER BY `foo` DESC
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => ['foo', { -asc => 'bar' } ] } }; # $stmt => ORDER BY `foo`, `bar` ASC
+  ($stmt, @bind) = sqlf '%o', { order_by => 'foo' };                       # $stmt => ORDER BY `foo`
+  ($stmt, @bind) = sqlf '%o', { order_by => { foo => 'DESC' } };           # $stmt => ORDER BY `foo` DESC
+  ($stmt, @bind) = sqlf '%o', { order_by => ['foo', { -asc => 'bar' } ] }; # $stmt => ORDER BY `foo`, `bar` ASC
 
 =item group_by
 
 This option makes C<< GROUP BY >> clause. Argument value some as C<< order_by >> option.
 
-  ($stmt, @bind) = sqlf '%o', { options => { group_by => { foo => 'DESC' } } }; # $stmt => GROUP BY `foo` DESC
+  ($stmt, @bind) = sqlf '%o', { group_by => { foo => 'DESC' } }; # $stmt => GROUP BY `foo` DESC
 
 =item having
 
 This option makes C<< HAVING >> clause. Argument value some as C<< where >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { having => { foo => 'bar' } } };
+  ($stmt, @bind) = sqlf '%o', { having => { foo => 'bar' } };
   # $stmt: HAVING (`foo` = ?)
   # @bind: ('bar')
 
@@ -877,11 +893,11 @@ Default value is C<< $SQL::Format::LIMIT_DIALECT >>.
 
 This method same as C<< sqlf >> function.
 
-  my ($stmt, @bind) = $self->format('SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/],
-      where   => { hoge => 'fuga' },
-  });
+  my ($stmt, @bind) = $self->format('SELECT %c FROM %t WHERE %w',
+      [qw/bar baz/],
+      'foo',
+      { hoge => 'fuga' },
+  );
   # $stmt: SELECT `bar`, `baz` FROM ` foo` WHERE (`hoge` = ?)
   # @bind: ('fuga')
 

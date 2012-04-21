@@ -9,11 +9,7 @@ $test->(
     desc    => 'basic',
     input   => [
         'SELECT %c FROM %t WHERE %w',
-        {
-            table   => 'foo',
-            columns => [qw/bar baz/],
-            where   => { hoge => 'fuga' },
-        },
+        [qw/bar baz/], 'foo', { hoge => 'fuga' },
     ],
     expects => {
         stmt => 'SELECT `bar`, `baz` FROM `foo` WHERE (`hoge` = ?)',

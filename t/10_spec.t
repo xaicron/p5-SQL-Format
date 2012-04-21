@@ -18,12 +18,12 @@ while (defined(my $line = <$fh>)) {
 
     my $desc           = $line;
     my $input          = <$fh>;
-    my $param          = _eval(scalar <$fh>);
+    my @params         = _eval(scalar <$fh>);
     my $expected       = <$fh>;
     my $expected_binds = _eval(scalar <$fh>);
 
     subtest "$spec: $desc" => sub {
-        my ($stmt, @bind) = sqlf $input, $param;
+        my ($stmt, @bind) = sqlf $input, @params;
         is $stmt, $expected;
         is_deeply \@bind, $expected_binds;
     };
@@ -31,12 +31,13 @@ while (defined(my $line = <$fh>)) {
 
 sub _eval {
     my $line = shift;
-    my $data = eval "$line";
+    my $wantarray = wantarray;
+    my $data = $wantarray ? [ eval "$line" ] : eval "$line";
     if ($@) {
         fail "syntax error at line $.";
         exit;
     }
-    $data;
+    return $wantarray ? @$data : $data;
 }
 
 done_testing;

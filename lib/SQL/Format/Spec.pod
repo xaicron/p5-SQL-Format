@@ -18,82 +18,82 @@ For example:
 
   # basic select query
   SELECT %c FROM %t WHERE %w
-  { columns => [qw/foo bar/], table => 'hoge', where => { fuga => 'piyo' } }
+  [qw/foo bar/], 'hoge', { fuga => 'piyo' }
   SELECT `foo`, `bar` FROM `hoge` WHERE (`fuga` = ?)
   [qw/piyo/]
 
   # maybe your code are
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => {
-      columns => [qw/foo bar/],
-      table   => 'hoge',
-      where   => { fuga => 'piyo' },
-  };
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/foo bar/],
+      'hoge',
+      { fuga => 'piyo' },
+  );
 
 =head2 columns
 
   # scalar
   SELECT %c FROM table
-  { columns => 'foo' }
+  'foo'
   SELECT `foo` FROM table
   []
-  
+
   # array
   SELECT %c FROM table
-  { columns => [qw/foo bar/] }
+  [qw/foo bar/]
   SELECT `foo`, `bar` FROM table
   []
   
   # empty array
   SELECT %c FROM table
-  { columns => [] }
+  []
   SELECT * FROM table
   []
   
   # undef
   SELECT %c FROM table
-  { columns => undef }
+  undef
   SELECT * FROM table
   []
   
   # '*'
   SELECT %c FROM table
-  { columns => '*' }
+  '*'
   SELECT * FROM table
   []
   
   # scalar ref
   SELECT %c FROM table
-  { columns => \'foo AS bar' }
+  \'foo AS bar'
   SELECT foo AS bar FROM table
   []
   
   # scalar ref in array
   SELECT %c FROM table
-  { columns => [\'foo AS bar', 'baz'] }
+  [\'foo AS bar', 'baz']
   SELECT foo AS bar, `baz` FROM table
   []
 
   # hash in array
   SELECT %c FROM table
-  { columns => [ { foo => 'bar' } ] }
+  [ { foo => 'bar' } ]
   SELECT `foo` AS `bar` FROM table
   []
 
   # array in array
   SELECT %c FROM table
-  { columns => [ [foo => 'bar'] ] }
+  [ [foo => 'bar'] ]
   SELECT `foo` AS `bar` FROM table
   []
 
   # scalar ref into array in array
   SELECT %c FROM table
-  { columns => [ [\'UNIX_TIMESTAMP()' => 'bar'] ] }
+  [ [\'UNIX_TIMESTAMP()' => 'bar'] ]
   SELECT UNIX_TIMESTAMP() AS `bar` FROM table
   []
 
   # ref array in array
   SELECT %c FROM table
-  { columns => [ \[\'UNIX_TIMESTAMP(?)' => 'bar', '2012-12-12 12:12:12'] ] }
+  [ \[\'UNIX_TIMESTAMP(?)' => 'bar', '2012-12-12 12:12:12'] ]
   SELECT UNIX_TIMESTAMP(?) AS `bar` FROM table
   ['2012-12-12 12:12:12']
 
@@ -101,31 +101,31 @@ For example:
 
   # scalar
   SELECT foo FROM %t
-  { table => 'table' }
+  'table'
   SELECT foo FROM `table`
   []
   
   # hash
   SELECT foo FROM %t
-  { table => { table => 't' } }
+  { table => 't' }
   SELECT foo FROM `table` AS `t`
   []
 
   # hash multi value
   SELECT foo FROM %t
-  { table => { tableA => 'a', tableB => 'b' } }
+  { tableA => 'a', tableB => 'b' }
   SELECT foo FROM `tableA` AS `a`, `tableB` AS `b`
   []
 
   # array
   SELECT foo FROM %t
-  { table => [qw/t1 t2/] }
+  [qw/t1 t2/]
   SELECT foo FROM `t1`, `t2`
   []
 
   # array mixied
   SELECT foo FROM %t
-  { table => ['t1', { t2 => 'foo' }, { t3 => 'bar', t4 => 'baz' }] }
+  [ 't1', { t2 => 'foo' }, { t3 => 'bar', t4 => 'baz' } ]
   SELECT foo FROM `t1`, `t2` AS `foo`, `t3` AS `bar`, `t4` AS `baz`
   []
 
@@ -133,13 +133,13 @@ For example:
 
   # array
   WHERE %w
-  { where => { id => [qw/1 2 3/] } }
+  { id => [qw/1 2 3/] }
   WHERE (`id` IN (?, ?, ?))
   [qw/1 2 3/]
   
   # empry array
   WHERE %w
-  { where => { id => [] } }
+  { id => [] }
   WHERE (0=1)
   []
 
@@ -147,25 +147,25 @@ For example:
 
   # scalars
   WHERE %w
-  { where => { id => [ -and => qw/1 2 3/ ] } }
+  { id => [ -and => qw/1 2 3/ ] }
   WHERE (`id` = ?) AND (`id` = ?) AND (`id` = ?)
   [qw/1 2 3/]
   
   # hashes
   WHERE %w
-  { where => { id => [ -and => { '>' => 10 }, { '<' => 20 } ] } }
+  { id => [ -and => { '>' => 10 }, { '<' => 20 } ] }
   WHERE (`id` > ?) AND (`id` < ?)
   [qw/10 20/]
   
   # array(s)
   WHERE %w
-  { where => { id => [ -and => [qw/1 2 3/], [qw/4 5 6/] ] } }
+  { id => [ -and => [qw/1 2 3/], [qw/4 5 6/] ] }
   WHERE (`id` IN (?, ?, ?)) AND (`id` IN (?, ?, ?))
   [qw/1 2 3 4 5 6/]
   
   # IN and scalar
   WHERE %w
-  { where => { id => [ -and => { IN => [qw/1 2 3/] }, 4 ] } }
+  { id => [ -and => { IN => [qw/1 2 3/] }, 4 ] }
   WHERE (`id` IN (?, ?, ?)) AND (`id` = ?)
   [qw/1 2 3 4/]
 
@@ -173,31 +173,31 @@ For example:
 
   # scalars
   WHERE %w
-  { where => { id => [ -or => qw/1 2 3/ ] } }
+  { id => [ -or => qw/1 2 3/ ] }
   WHERE (`id` = ?) OR (`id` = ?) OR (`id` = ?)
   [qw/1 2 3/]
   
   # hashes
   WHERE %w
-  { where => { id => [ -or => { '>' => 10 }, { '<' => 20 } ] } }
+  { id => [ -or => { '>' => 10 }, { '<' => 20 } ] }
   WHERE (`id` > ?) OR (`id` < ?)
   [qw/10 20/]
   
   # array(s)
   WHERE %w
-  { where => { id => [ -or => [qw/1 2 3/], [qw/4 5 6/] ] } }
+  { id => [ -or => [qw/1 2 3/], [qw/4 5 6/] ] }
   WHERE (`id` IN (?, ?, ?)) OR (`id` IN (?, ?, ?))
   [qw/1 2 3 4 5 6/]
   
   # IN and scalar
   WHERE %w
-  { where => { id => [ -or => { IN => [qw/1 2 3/] }, 4 ] } }
+  { id => [ -or => { IN => [qw/1 2 3/] }, 4 ] }
   WHERE (`id` IN (?, ?, ?)) OR (`id` = ?)
   [qw/1 2 3 4/]
   
   # no-op equals OR
   WHERE %w
-  { where => { id => [ { '>' => 10 }, { '<' => 20 } ] } }
+  { id => [ { '>' => 10 }, { '<' => 20 } ] }
   WHERE (`id` > ?) OR (`id` < ?)
   [qw/10 20/]
 
@@ -205,49 +205,49 @@ For example:
 
   # IN (array)
   WHERE %w
-  { where => { id => { IN => [qw/1 2 3/] } } }
+  { id => { IN => [qw/1 2 3/] } }
   WHERE (`id` IN (?, ?, ?))
   [qw/1 2 3/]
   
   # iN (ignore case)
   WHERE %w
-  { where => { id => { iN => [qw/1 2 3/] } } }
+  { id => { iN => [qw/1 2 3/] } }
   WHERE (`id` IN (?, ?, ?))
   [qw/1 2 3/]
   
   # -in
   WHERE %w
-  { where => { id => { -in => [qw/1 2 3/] } } }
+  { id => { -in => [qw/1 2 3/] } }
   WHERE (`id` IN (?, ?, ?))
   [qw/1 2 3/]
   
   # IN (empry array)
   WHERE %w
-  { where => { id => { IN => [] } } }
+  { id => { IN => [] } }
   WHERE (0=1)
   []
   
   # IN (scalar)
   WHERE %w
-  { where => { id => { IN => 'foo' } } }
+  { id => { IN => 'foo' } }
   WHERE (`id` = ?)
   [qw/foo/]
   
   # IN (ref)
   WHERE %w
-  { where => { id => { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } } }
+  { id => { IN => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } }
   WHERE (`id` IN (SELECT foo FROM bar WHERE hoge = ?))
   [qw/fuga/]
   
   # IN (scalar ref)
   WHERE %w
-  { where => { id => { 'IN' => \'SELECT foo FROM bar' } } }
+  { id => { 'IN' => \'SELECT foo FROM bar' } }
   WHERE (`id` IN (SELECT foo FROM bar))
   []
   
   # IN (undef)
   WHERE %w
-  { where => { id => { IN => undef } } }
+  { id => { IN => undef } }
   WHERE (`id` IS NULL)
   []
 
@@ -255,49 +255,49 @@ For example:
 
   # NOT IN (array)
   WHERE %w
-  { where => { id => { 'NOT IN' => [qw/1 2 3/] } } }
+  { id => { 'NOT IN' => [qw/1 2 3/] } }
   WHERE (`id` NOT IN (?, ?, ?))
   [qw/1 2 3/]
   
   # Not iN (ignore case)
   WHERE %w
-  { where => { id => { 'Not iN' => [qw/1 2 3/] } } }
+  { id => { 'Not iN' => [qw/1 2 3/] } }
   WHERE (`id` NOT IN (?, ?, ?))
   [qw/1 2 3/]
   
   # -not_in
   WHERE %w
-  { where => { id => { -not_in => [qw/1 2 3/] } } }
+  { id => { -not_in => [qw/1 2 3/] } }
   WHERE (`id` NOT IN (?, ?, ?))
   [qw/1 2 3/]
   
   # NOT IN (empry array)
   WHERE %w
-  { where => { id => { 'NOT IN' => [] } } }
+  { id => { 'NOT IN' => [] } }
   WHERE (1=1)
   []
   
   # NOT IN (scalar)
   WHERE %w
-  { where => { id => { 'NOT IN' => 'foo' } } }
+  { id => { 'NOT IN' => 'foo' } }
   WHERE (`id` <> ?)
   [qw/foo/]
   
   # NOT IN (ref)
   WHERE %w
-  { where => { id => { 'NOT IN' => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } } }
+  { id => { 'NOT IN' => \['SELECT foo FROM bar WHERE hoge = ?', 'fuga'] } }
   WHERE (`id` NOT IN (SELECT foo FROM bar WHERE hoge = ?))
   [qw/fuga/]
   
   # NOT IN (scalar ref)
   WHERE %w
-  { where => { id => { 'NOT IN' => \'SELECT foo FROM bar' } } }
+  { id => { 'NOT IN' => \'SELECT foo FROM bar' } }
   WHERE (`id` NOT IN (SELECT foo FROM bar))
   []
   
   # NOT IN (undef)
   WHERE %w
-  { where => { id => { 'NOT IN' => undef } } }
+  { id => { 'NOT IN' => undef } }
   WHERE (`id` IS NOT NULL)
   []
 
@@ -305,25 +305,25 @@ For example:
 
   # scalar
   WHERE %w
-  { where => { id => { LIKE => 'foo%' } } }
+  { id => { LIKE => 'foo%' } }
   WHERE (`id` LIKE ?)
   [qw/foo%/]
   
   # -like
   WHERE %w
-  { where => { id => { -like => 'foo%' } } }
+  { id => { -like => 'foo%' } }
   WHERE (`id` LIKE ?)
   [qw/foo%/]
   
   # scalar ref
   WHERE %w
-  { where => { id => { LIKE => \'"foo%"' } } }
+  { id => { LIKE => \'"foo%"' } }
   WHERE (`id` LIKE "foo%")
   []
   
   # array
   WHERE %w
-  { where => { id => { LIKE => ['%foo', \'"bar%"'] } } }
+  { id => { LIKE => ['%foo', \'"bar%"'] } }
   WHERE (`id` LIKE ? OR `id` LIKE "bar%")
   [qw/%foo/]
 
@@ -331,25 +331,25 @@ For example:
 
   # scalar
   WHERE %w
-  { where => { id => { 'NOT LIKE' => 'foo%' } } }
+  { id => { 'NOT LIKE' => 'foo%' } }
   WHERE (`id` NOT LIKE ?)
   [qw/foo%/]
   
   # -not_like 
   WHERE %w
-  { where => { id => { -not_like => 'foo%' } } }
+  { id => { -not_like => 'foo%' } }
   WHERE (`id` NOT LIKE ?)
   [qw/foo%/]
   
   # scalar ref
   WHERE %w
-  { where => { id => { 'NOT LIKE' => \'"foo%"' } } }
+  { id => { 'NOT LIKE' => \'"foo%"' } }
   WHERE (`id` NOT LIKE "foo%")
   []
   
   # array
   WHERE %w
-  { where => { id => { 'NOT LIKE' => ['%foo', \'"bar%"'] } } }
+  { id => { 'NOT LIKE' => ['%foo', \'"bar%"'] } }
   WHERE (`id` NOT LIKE ? OR `id` NOT LIKE "bar%")
   [qw/%foo/]
 
@@ -357,31 +357,31 @@ For example:
 
   # array
   WHERE %w
-  { where => { id => { BETWEEN => [qw/10 20/] } } }
+  { id => { BETWEEN => [qw/10 20/] } }
   WHERE (`id` BETWEEN ? AND ?)
   [qw/10 20/]
   
   # -between
   WHERE %w
-  { where => { id => { -between => [qw/10 20/] } } }
+  { id => { -between => [qw/10 20/] } }
   WHERE (`id` BETWEEN ? AND ?)
   [qw/10 20/]
   
   # ref
   WHERE %w
-  { where => { id => { BETWEEN => \['? AND ?', 10, 20] } } }
+  { id => { BETWEEN => \['? AND ?', 10, 20] } }
   WHERE (`id` BETWEEN ? AND ?)
   [qw/10 20/]
   
   # scalar
   WHERE %w
-  { where => { id => { BETWEEN => \'lower(x) AND upper(y)' } } }
+  { id => { BETWEEN => \'lower(x) AND upper(y)' } }
   WHERE (`id` BETWEEN lower(x) AND upper(y))
   []
   
   # mixed
   WHERE %w
-  { where => { id => { BETWEEN => [ \'lower(x)', \['upper(?)', 'stuff'] ] } } }
+  { id => { BETWEEN => [ \'lower(x)', \['upper(?)', 'stuff'] ] } }
   WHERE (`id` BETWEEN lower(x) AND upper(?))
   ['stuff']
 
@@ -389,31 +389,31 @@ For example:
 
   # array
   WHERE %w
-  { where => { id => { 'NOT BETWEEN' => [qw/10 20/] } } }
+  { id => { 'NOT BETWEEN' => [qw/10 20/] } }
   WHERE (`id` NOT BETWEEN ? AND ?)
   [qw/10 20/]
   
   # -between
   WHERE %w
-  { where => { id => { -not_between => [qw/10 20/] } } }
+  { id => { -not_between => [qw/10 20/] } }
   WHERE (`id` NOT BETWEEN ? AND ?)
   [qw/10 20/]
   
   # ref
   WHERE %w
-  { where => { id => { 'NOT BETWEEN' => \['? AND ?', 10, 20] } } }
+  { id => { 'NOT BETWEEN' => \['? AND ?', 10, 20] } }
   WHERE (`id` NOT BETWEEN ? AND ?)
   [qw/10 20/]
   
   # scalar
   WHERE %w
-  { where => { id => { 'NOT BETWEEN' => \'lower(x) AND upper(y)' } } }
+  { id => { 'NOT BETWEEN' => \'lower(x) AND upper(y)' } }
   WHERE (`id` NOT BETWEEN lower(x) AND upper(y))
   []
   
   # mixed
   WHERE %w
-  { where => { id => { 'NOT BETWEEN' => [ \'lower(x)', \['upper(?)', 'stuff'] ] } } }
+  { id => { 'NOT BETWEEN' => [ \'lower(x)', \['upper(?)', 'stuff'] ] } }
   WHERE (`id` NOT BETWEEN lower(x) AND upper(?))
   ['stuff']
 
@@ -421,43 +421,43 @@ For example:
 
   # scalar
   WHERE %w
-  { where => { id => { '<' => 12345 } } }
+  { id => { '<' => 12345 } }
   WHERE (`id` < ?)
   [qw/12345/]
 
   # scalar ref
   WHERE %w
-  { where => { id => { '>' => \'UNIX_TIMESTAMP()' } } }
+  { id => { '>' => \'UNIX_TIMESTAMP()' } }
   WHERE (`id` > UNIX_TIMESTAMP())
   []
 
   # ref array
   WHERE %w
-  { where => { id => { '!=' => \['UNIX_TIMESTAMP(?)', '2012-12-12 00:00:00'] } } }
+  { id => { '!=' => \['UNIX_TIMESTAMP(?)', '2012-12-12 00:00:00'] } }
   WHERE (`id` != UNIX_TIMESTAMP(?))
   ['2012-12-12 00:00:00']
 
   # array =
   WHERE %w
-  { where => { id => { '=' => [qw/1 2 3/] } } }
+  { id => { '=' => [qw/1 2 3/] } }
   WHERE (`id` IN (?, ?, ?))
   [qw/1 2 3/]
 
   # empty array =
   WHERE %w
-  { where => { id => { '=' => [] } } }
+  { id => { '=' => [] } }
   WHERE (0=1)
   []
 
   # array !=
   WHERE %w
-  { where => { id => { '!=' => [qw/1 2 3/] } } }
+  { id => { '!=' => [qw/1 2 3/] } }
   WHERE (`id` NOT IN (?, ?, ?))
   [qw/1 2 3/]
 
   # empty array !=
   WHERE %w
-  { where => { id => { '!=' => [] } } }
+  { id => { '!=' => [] } }
   WHERE (1=1)
   []
 
@@ -465,13 +465,13 @@ For example:
 
   # mixied scalar
   WHERE %w
-  { where => { id => { '>' => '12345', '<' => '67890' } } }
+  { id => { '>' => '12345', '<' => '67890' } }
   WHERE ((`id` < ?) AND (`id` > ?))
   [qw/67890 12345/]
 
   # mixied array
   WHERE %w
-  { where => { id => { '!=' => [qw/a b c/], '=' => [qw/1 2 3/] } } }
+  { id => { '!=' => [qw/a b c/], '=' => [qw/1 2 3/] } }
   WHERE ((`id` NOT IN (?, ?, ?)) AND (`id` IN (?, ?, ?)))
   [qw/a b c 1 2 3/]
 
@@ -479,7 +479,7 @@ For example:
 
   # scalar
   WHERE %w
-  { where => { id => 12345 } }
+  { id => 12345 }
   WHERE (`id` = ?)
   [12345]
 
@@ -487,7 +487,7 @@ For example:
 
   # scalar ref
   WHERE %w
-  { where => { id => \'> UNIX_TIMESTAMP()' } }
+  { id => \'> UNIX_TIMESTAMP()' }
   WHERE (`id` > UNIX_TIMESTAMP())
   []
 
@@ -495,7 +495,7 @@ For example:
 
   # is null
   WHERE %w
-  { where => { id => undef } }
+  { id => undef }
   WHERE (`id` IS NULL)
   []
 
@@ -503,37 +503,37 @@ For example:
 
   # scalar
   %o
-  { options => { group_by => 'foo' } }
+  { group_by => 'foo' }
   GROUP BY `foo`
   []
 
   # undef
   %o
-  { options => { group_by => undef } }
+  { group_by => undef }
   GROUP BY NULL
   []
 
   # hashref
   %o
-  { options => { group_by => { foo => 'DESC' } } }
+  { group_by => { foo => 'DESC' } }
   GROUP BY `foo` DESC
   []
 
   # hashref -asc
   %o
-  { options => { group_by => { -asc => 'foo' } } }
+  { group_by => { -asc => 'foo' } }
   GROUP BY `foo` ASC
   []
 
   # hashref multi value
   %o
-  { options => { group_by => { foo => 'DESC', -asc => 'bar' } } }
+  { group_by => { foo => 'DESC', -asc => 'bar' } }
   GROUP BY `bar` ASC, `foo` DESC
   []
 
   # array mixed
   %o
-  { options => { group_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] } }
+  { group_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] }
   GROUP BY `hoge`, `bar` ASC, `foo` DESC
   []
 
@@ -541,13 +541,13 @@ For example:
 
   # simple
   %o
-  { options => { having => { foo => 'bar' } } }
+  { having => { foo => 'bar' } }
   HAVING (`foo` = ?)
   [qw/bar/]
 
   # with group by
   %o
-  { options => { having => { 'SUM(foo)' => { '>=' => 10 } }, group_by => 'bar' } }
+  { having => { 'SUM(foo)' => { '>=' => 10 } }, group_by => 'bar' }
   GROUP BY `bar` HAVING (SUM(foo) >= ?)
   [qw/10/]
 
@@ -555,37 +555,37 @@ For example:
 
   # scalar
   %o
-  { options => { order_by => 'foo' } }
+  { order_by => 'foo' }
   ORDER BY `foo`
   []
 
   # undef
   %o
-  { options => { order_by => undef } }
+  { order_by => undef }
   ORDER BY NULL
   []
 
   # hashref
   %o
-  { options => { order_by => { foo => 'DESC' } } }
+  { order_by => { foo => 'DESC' } }
   ORDER BY `foo` DESC
   []
 
   # hashref -asc
   %o
-  { options => { order_by => { -asc => 'foo' } } }
+  { order_by => { -asc => 'foo' } }
   ORDER BY `foo` ASC
   []
 
   # hashref multi value
   %o
-  { options => { order_by => { foo => 'DESC', -asc => 'bar' } } }
+  { order_by => { foo => 'DESC', -asc => 'bar' } }
   ORDER BY `bar` ASC, `foo` DESC
   []
 
   # array mixed
   %o
-  { options => { order_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] } }
+  { order_by => ['hoge', { foo => 'DESC', -asc => 'bar' }] }
   ORDER BY `hoge`, `bar` ASC, `foo` DESC
   []
 
@@ -593,13 +593,13 @@ For example:
 
   # limit only
   %o
-  { options => { limit => 100 } }
+  { limit => 100 }
   LIMIT 100
   []
 
   # limit offset
   %o
-  { options => { limit => 100, offset => 20 } }
+  { limit => 100, offset => 20 }
   LIMIT 100 OFFSET 20
   []
 

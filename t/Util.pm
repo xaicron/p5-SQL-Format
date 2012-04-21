@@ -21,10 +21,9 @@ sub capture_warn(&) {
 }
 
 sub mk_errstr {
-    my ($spec, $key) = @_;
+    my ($num, $spec) = @_;
     $spec = quotemeta $spec;
-    $key  = quotemeta $key;
-    return qr/'$spec' must be specified '$key' field/;
+    return qr/missing arguments nummber of $num and '$spec' format in sqlf/;
 }
 
 sub mk_test {
