@@ -48,7 +48,7 @@ my $LIMIT_DIALECT_MAP = {
 };
 
 sub sqlf {
-    my ($format, @args) = @_;
+    my $format = shift;
 
     my @bind;
     my @tokens = split m#(%[ctwo])(?=\W|$)#, $format;
@@ -56,12 +56,10 @@ sub sqlf {
         my $spec = $tokens[$i];
         my $method = $SPEC_TO_METHOD_MAP->{$spec};
         croak "'$spec' does not supported format" unless $method;
+        croak sprintf "missing arguments nummber of %i and '%s' format in sqlf",
+            ($i + 1) / 2, $spec unless @_;
 
-        $tokens[$i] = __PACKAGE__->$method(shift @args, \@bind);
-        unless (defined $tokens[$i]) {
-            croak sprintf "missing arguments nummber of %i and '%s' format in sqlf",
-                ($i + 1) / 2, $spec;
-        }
+        $tokens[$i] = __PACKAGE__->$method(shift(@_), \@bind);
     }
 
     return join('',@tokens), @bind;
@@ -485,12 +483,12 @@ sub new {
 }
 
 sub format {
-    my ($self, $format, $args) = @_;
+    my $self = shift;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
-    sqlf($format, $args);
+    goto &sqlf;
 }
 
 sub select {
@@ -505,22 +503,20 @@ sub select {
     my $prefix = delete $opts->{prefix} || 'SELECT';
     my $suffix = delete $opts->{suffix};
     my $format = "$prefix %c FROM %t";
+    my @args   = ($cols, $table);
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
     if ($suffix) {
         $format .= " $suffix";
     }
 
-    sqlf($format, {
-        options => $opts,
-        table   => $table,
-        columns => $cols,
-        where   => $where,
-    });
+    sqlf($format, @args);
 }
 
 sub insert {
@@ -600,17 +596,17 @@ sub update {
 
     my $format = "$prefix $quoted_table SET ".join($self->{delimiter}, @columns);
 
+    my @args;
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
 
-    my ($stmt, @bind) = sqlf($format, {
-        options => $opts,
-        where   => $where,
-    });
+    my ($stmt, @bind) = sqlf($format, @args);
 
     return $stmt, (@bind_params, @bind);
 }
@@ -628,17 +624,17 @@ sub delete {
     my $quoted_table = _quote($table);
     my $format       = "$prefix FROM $quoted_table";
 
+    my @args;
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
+        push @args, $where;
     }
     if (keys %$opts) {
         $format .= ' %o';
+        push @args, $opts;
     }
 
-    sqlf($format, {
-        options => $opts,
-        where   => $where,
-    });
+    sqlf($format, @args);
 }
 
 1;

@@ -4,29 +4,18 @@ use t::Util;
 use Test::More;
 use SQL::Format;
 
-subtest '%c: null' => sub {
-    eval { sqlf 'SELECT %c FROM table' };
-    like $@, mk_errstr '%c' => 'columns';
-};
-
 subtest '%t: undef' => sub {
     eval { sqlf 'SELECT foo FROM %t' };
-    like $@, mk_errstr '%t', 'table';
+    like $@, mk_errstr 1, '%t';
 };
 
-subtest '%t: null' => sub {
-    eval { sqlf 'SELECT foo FROM %t' };
-    like $@, mk_errstr '%t', 'table';
-};
-
-subtest '%w: no-op equals OR' => sub {
-    my ($stmt, @bind) = sqlf 'WHERE %w', {
-        where => {
-            id => [{ '>' => 10 }, { '<' => '20' } ],
-        },
+subtest '%w: undef' => sub {
+    eval {
+        sqlf 'SELECT %c FROM %t WHERE %w', (
+            [qw/bar baz/], 'foo',
+        );
     };
-    is $stmt, 'WHERE (`id` > ?) OR (`id` < ?)';
-    is_deeply \@bind, [qw/10 20/];
+    like $@, mk_errstr 3, '%w';
 };
 
 done_testing;
