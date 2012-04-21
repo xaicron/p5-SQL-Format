@@ -101,7 +101,24 @@ sub sqlf {
         my $key = 'table';
         my $val = $args->{$key};
         if (ref $val eq 'ARRAY') {
-            $args->{$key} = join $DELIMITER, map { _quote($_) } @$val;
+            $args->{$key} = join $DELIMITER, map {
+                my $v = $_;
+                my $ret;
+                if (ref $v eq 'HASH') {
+                    $ret = join $DELIMITER, map {
+                        _quote($_).' AS '._quote($v->{$_})
+                    } sort keys %$v;
+                }
+                else {
+                    $ret = _quote($v);
+                }
+                $ret;
+            } @$val;
+        }
+        elsif (ref $val eq 'HASH') {
+            $args->{$key} = join $DELIMITER, map {
+                _quote($_).' AS '._quote($val->{$_})
+            } sort keys %$val;
         }
         elsif (defined $val) {
             $args->{$key} = _quote($val);

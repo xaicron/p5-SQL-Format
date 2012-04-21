@@ -105,10 +105,28 @@ For example:
   SELECT foo FROM `table`
   []
   
+  # hash
+  SELECT foo FROM %t
+  { table => { table => 't' } }
+  SELECT foo FROM `table` AS `t`
+  []
+
+  # hash multi value
+  SELECT foo FROM %t
+  { table => { tableA => 'a', tableB => 'b' } }
+  SELECT foo FROM `tableA` AS `a`, `tableB` AS `b`
+  []
+
   # array
   SELECT foo FROM %t
   { table => [qw/t1 t2/] }
   SELECT foo FROM `t1`, `t2`
+  []
+
+  # array mixied
+  SELECT foo FROM %t
+  { table => ['t1', { t2 => 'foo' }, { t3 => 'bar', t4 => 'baz' }] }
+  SELECT foo FROM `t1`, `t2` AS `foo`, `t3` AS `bar`, `t4` AS `baz`
   []
 
 =head2 where array in
