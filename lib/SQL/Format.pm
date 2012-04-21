@@ -153,6 +153,7 @@ sub table {
 sub where {
     my ($self, $val, $bind) = @_;
 
+    return unless ref $val eq 'HASH';
     my $ret = join ' AND ', map {
         my $org_key  = $_;
         my $no_paren = 0;
