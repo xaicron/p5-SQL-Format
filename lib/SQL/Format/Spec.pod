@@ -18,16 +18,16 @@ For example:
 
   # basic select query
   SELECT %c FROM %t WHERE %w
-  { columns => [qw/foo bar/], table => 'hoge', where => { fuga => 'piyo' } }
+  [qw/foo bar/], 'hoge', { fuga => 'piyo' }
   SELECT `foo`, `bar` FROM `hoge` WHERE (`fuga` = ?)
   [qw/piyo/]
 
   # maybe your code are
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => {
-      columns => [qw/foo bar/],
-      table   => 'hoge',
-      where   => { fuga => 'piyo' },
-  };
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/foo bar/],
+      'hoge',
+      { fuga => 'piyo' },
+  );
 
 =head2 columns
 

@@ -659,27 +659,27 @@ SQL::Format - Yet yet another SQL builder
 
   use SQL::Format;
 
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/],
-      where   => {
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/bar baz/], # %c
+      'foo',         # %t
+      {
           hoge => 'fuga',
           piyo => [qw/100 200 300/],
-      },
-  };
+      },             # %w
+  );
   # $stmt: SELECT `bar`, `baz` FROM `foo` WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
   # @bind: ('fuga', 100, 200, 300);
 
-  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w %o', {
-      table   => 'foo',
-      columns => '*',
-      where   => { hoge => 'fuga' },
-      options => {
+  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w %o' => (
+      '*',                # %c
+      'foo',              # %t
+      { hoge => 'fuga' }, # w
+      {
           order_by => { bar => 'DESC' },
           limit    => 100,
           offset   => 10,
-      },
-  };
+      },                  # %o
+  );
   # $stmt: SELECT * FROM `foo` WHERE (`hoge` = ?) ORDER BY `bar` DESC LIMIT 100 OFFSET 10
   # @bind: (`fuga`)
 
@@ -715,18 +715,18 @@ SQL::Format is a easy to SQL query building library.
 
 =head1 FUNCTIONS
 
-=head2 sqlf($format, \%args)
+=head2 sqlf($format, @args)
 
 Generate SQL from formatted output conversion.
 
-  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/].
-      where   => {
+  my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+      [qw/bar baz/],   # %c
+      'foo',           # %t
+      {
           hoge => 'fuga',
           piyo => [100, 200, 300],
-      },
-  };
+      },               # %w
+  );
   # $stmt: SELECT `foo` FROM `bar`, `baz WHERE (`hoge` = ?) AND (`piyo` IN (?, ?, ?))
   # @bind: ('fuga', 100, 200, 300)
 
@@ -738,31 +738,30 @@ Currently implemented formatters are:
 
 This format is a table name.
 
-  ($stmt, @bind) = sqlf '%t', { table => 'table_name' };        # $stmt => `table_name`
-  ($stmt, @bind) = sqlf '%t', { table => [qw/tableA tableB/] }; # $stmt => `tableA`, `tableB`
+  ($stmt, @bind) = sqlf '%t', 'table_name';        # $stmt => `table_name`
+  ($stmt, @bind) = sqlf '%t', [qw/tableA tableB/]; # $stmt => `tableA`, `tableB`
 
 =item %c
 
 This format is a column name.
 
-  ($stmt, @bind) = sqlf '%c', { columns => 'column_name' };       # $stmt => `column_name`
-  ($stmt, @bind) = sqlf '%c', { columns => [qw/colA colB/] };     # $stmt => `colA`, `colB`
-  ($stmt, @bind) = sqlf '%c', { columns => '*' };                 # $stmt => *
-  ($stmt, @bind) = sqlf '%c', { columns => [\'COUNT(*)', colC] }; # $stmt => COUNT(*), `colC`
+  ($stmt, @bind) = sqlf '%c', 'column_name';       # $stmt => `column_name`
+  ($stmt, @bind) = sqlf '%c', [qw/colA colB/];     # $stmt => `colA`, `colB`
+  ($stmt, @bind) = sqlf '%c', '*';                 # $stmt => *
+  ($stmt, @bind) = sqlf '%c', [\'COUNT(*)', colC]; # $stmt => COUNT(*), `colC`
 
 =item %w
 
 This format is a where clause.
 
-  ($stmt, @bind) = sqlf '%w', {
-      where => { foo => 'bar' },
-  };
+  ($stmt, @bind) = sqlf '%w', { foo => 'bar' };
   # $stmt: (`foo` = ?)
   # @bind: ("bar")
 
   ($stmt, @bind) = sqlf '%w', {
-      where => { foo => 'bar', baz => [qw/100 200 300/] },
-  }
+      foo => 'bar',
+      baz => [qw/100 200 300/],
+  };
   # $stmt: (`baz` IN (?, ?, ?) AND (`foo` = ?)
   # @bind: (100, 200, 300, 'bar')
 
@@ -776,13 +775,13 @@ This format is a options. Currently specified are:
 
 This option makes C<< LIMIT $n >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { limit => 100 } }; # $stmt => LIMIT 100
+  ($stmt, @bind) = sqlf '%o', { limit => 100 }; # $stmt => LIMIT 100
 
 =item offset
 
 This option makes C<< OFFSET $n >> clause. You must be specified both limit option.
 
-  ($stmt, @bind) = sqlf '%o', { options => { limit => 100, offset => 20 } }; # $stmt => LIMIT 100 OFFSET 20
+  ($stmt, @bind) = sqlf '%o', { limit => 100, offset => 20 }; # $stmt => LIMIT 100 OFFSET 20
 
 You can change limit dialects from C<< $SQL::Format::LIMIT_DIALECT >>.
 
@@ -790,21 +789,21 @@ You can change limit dialects from C<< $SQL::Format::LIMIT_DIALECT >>.
 
 This option makes C<< ORDER BY >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => 'foo' } };                       # $stmt => ORDER BY `foo`
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => { foo => 'DESC' } } };           # $stmt => ORDER BY `foo` DESC
-  ($stmt, @bind) = sqlf '%o', { options => { order_by => ['foo', { -asc => 'bar' } ] } }; # $stmt => ORDER BY `foo`, `bar` ASC
+  ($stmt, @bind) = sqlf '%o', { order_by => 'foo' };                       # $stmt => ORDER BY `foo`
+  ($stmt, @bind) = sqlf '%o', { order_by => { foo => 'DESC' } };           # $stmt => ORDER BY `foo` DESC
+  ($stmt, @bind) = sqlf '%o', { order_by => ['foo', { -asc => 'bar' } ] }; # $stmt => ORDER BY `foo`, `bar` ASC
 
 =item group_by
 
 This option makes C<< GROUP BY >> clause. Argument value some as C<< order_by >> option.
 
-  ($stmt, @bind) = sqlf '%o', { options => { group_by => { foo => 'DESC' } } }; # $stmt => GROUP BY `foo` DESC
+  ($stmt, @bind) = sqlf '%o', { group_by => { foo => 'DESC' } }; # $stmt => GROUP BY `foo` DESC
 
 =item having
 
 This option makes C<< HAVING >> clause. Argument value some as C<< where >> clause.
 
-  ($stmt, @bind) = sqlf '%o', { options => { having => { foo => 'bar' } } };
+  ($stmt, @bind) = sqlf '%o', { having => { foo => 'bar' } };
   # $stmt: HAVING (`foo` = ?)
   # @bind: ('bar')
 
@@ -893,11 +892,11 @@ Default value is C<< $SQL::Format::LIMIT_DIALECT >>.
 
 This method same as C<< sqlf >> function.
 
-  my ($stmt, @bind) = $self->format('SELECT %c FROM %t WHERE %w', {
-      table   => 'foo',
-      columns => [qw/bar baz/],
-      where   => { hoge => 'fuga' },
-  });
+  my ($stmt, @bind) = $self->format('SELECT %c FROM %t WHERE %w',
+      [qw/bar baz/],
+      'foo',
+      { hoge => 'fuga' },
+  );
   # $stmt: SELECT `bar`, `baz` FROM ` foo` WHERE (`hoge` = ?)
   # @bind: ('fuga')
 
