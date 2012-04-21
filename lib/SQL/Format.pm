@@ -15,6 +15,8 @@ our $NAME_SEP      = '.';
 our $QUOTE_CHAR    = '`';
 our $LIMIT_DIALECT = 'LimitOffset';
 
+our $SELF = __PACKAGE__->new;
+
 my $SPEC_TO_METHOD_MAP = {
     '%c' => 'columns',
     '%t' => 'table',
@@ -59,7 +61,7 @@ sub sqlf {
         croak sprintf "missing arguments nummber of %i and '%s' format in sqlf",
             ($i + 1) / 2, $spec unless @_;
 
-        $tokens[$i] = __PACKAGE__->$method(shift(@_), \@bind);
+        $tokens[$i] = $SELF->$method(shift(@_), \@bind);
     }
 
     return join('',@tokens), @bind;
@@ -484,6 +486,7 @@ sub new {
 
 sub format {
     my $self = shift;
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -495,6 +498,7 @@ sub select {
     my ($self, $table, $cols, $where, $opts) = @_;
     croak 'Usage: $sqlf->select($table [, \@cols, \%where, \%opts])' unless defined $table;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -523,6 +527,7 @@ sub insert {
     my ($self, $table, $values, $opts) = @_;
     croak 'Usage: $sqlf->insert($table \%values|\@values [, \%opts])' unless defined $table && ref $values;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -564,6 +569,7 @@ sub update {
     my ($self, $table, $set, $where, $opts) = @_;
     croak 'Usage: $sqlf->update($table \%set|\@set [, \%where, \%opts])' unless defined $table && ref $set;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
@@ -615,6 +621,7 @@ sub delete {
     my ($self, $table, $where, $opts) = @_;
     croak 'Usage: $sqlf->delete($table [, \%where, \%opts])' unless defined $table;
 
+    local $SELF          = $self;
     local $DELIMITER     = $self->{delimiter};
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
