@@ -492,7 +492,7 @@ sub format {
     local $NAME_SEP      = $self->{name_sep};
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
-    goto &sqlf;
+    sqlf(@_);
 }
 
 sub select {
