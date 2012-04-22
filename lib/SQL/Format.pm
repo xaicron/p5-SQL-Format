@@ -38,6 +38,12 @@ my $SORT_OP_ALIAS = {
     -DESC => 'DESC',
 };
 
+my $SUPPORTED_INDEX_TYPE_MAP = {
+    USE    => 1,
+    FORCE  => 1,
+    IGNORE => 1,
+};
+
 use constant {
     _LIMIT_OFFSET => 1,
     _LIMIT_XY     => 2,
@@ -125,9 +131,7 @@ sub table {
             my $v = $_;
             my $ret;
             if (ref $v eq 'HASH') {
-                $ret = join $DELIMITER, map {
-                    _quote($_).' AS '._quote($v->{$_})
-                } sort keys %$v;
+                $ret = _complex_table_expr($v);
             }
             else {
                 $ret = _quote($v);
@@ -136,9 +140,7 @@ sub table {
         } @$val;
     }
     elsif (ref $val eq 'HASH') {
-        $ret = join $DELIMITER, map {
-            _quote($_).' AS '._quote($val->{$_})
-        } sort keys %$val;
+        $ret = _complex_table_expr($val);
     }
     elsif (defined $val) {
         $ret = _quote($val);
@@ -414,6 +416,35 @@ sub _quote {
     return join $NAME_SEP, map {
         "$QUOTE_CHAR$_$QUOTE_CHAR"
     } split /\Q$NAME_SEP\E/, $stuff;
+}
+
+sub _complex_table_expr {
+    my $stuff = shift;
+    my $ret = join $DELIMITER, map {
+        my ($k, $v) = ($_, $stuff->{$_});
+        my $ret = _quote($k);
+        if (ref $v eq 'HASH') {
+            $ret .= ' AS '._quote($v->{alias}) if $v->{alias};
+            if (exists $v->{index} && ref $v->{index}) {
+                my $type = uc($v->{index}{type} || 'USE');
+                croak "unkown index type: $type"
+                    unless $SUPPORTED_INDEX_TYPE_MAP->{$type};
+                croak "keys field must be specified in index option"
+                    unless defined $v->{index}{keys};
+                my $keys = $v->{index}{keys};
+                $keys = [ $keys ] unless ref $keys eq 'ARRAY';
+                $ret .= " $type INDEX (".join($DELIMITER,
+                    map { _quote($_) } @$keys
+                ).")";
+            }
+        }
+        else {
+            $ret .= ' AS '._quote($v);
+        }
+        $ret;
+    } sort keys %$stuff;
+
+    return $ret;
 }
 
 sub _sort_expr {
@@ -741,6 +772,12 @@ This format is a table name.
 
   ($stmt, @bind) = sqlf '%t', 'table_name';        # $stmt => `table_name`
   ($stmt, @bind) = sqlf '%t', [qw/tableA tableB/]; # $stmt => `tableA`, `tableB`
+  ($stmt, @bind) = sqlf '%t', { tableA => 't1' };  # $stmt => `tableA` AS `t1`
+  ($stmt, @bind) = sqlf '%t', {
+      tableA => {
+          index => { type => 'force', keys => [qw/key1 key2/] },
+          alias => 't1',
+  }; # $stmt: `tableA` AS `t1` FORCE INDEX (`key1`, `key2`)
 
 =item %c
 

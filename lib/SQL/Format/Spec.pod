@@ -129,6 +129,30 @@ For example:
   SELECT foo FROM `t1`, `t2` AS `foo`, `t3` AS `bar`, `t4` AS `baz`
   []
 
+  # add index hint
+  SELECT foo FROM %t
+  { table => { index => { type => 'force', keys => [qw/key1 key2/] } } }
+  SELECT foo FROM `table` FORCE INDEX (`key1`, `key2`)
+  []
+
+  # add index hint (default type is USE INDEX)
+  SELECT foo FROM %t
+  { table => { index => { keys => [qw/key1 key2/] } } }
+  SELECT foo FROM `table` USE INDEX (`key1`, `key2`)
+  []
+
+  # add index hint (keys is scalar)
+  SELECT foo FROM %t
+  { table => { index => { keys => 'key1' } } }
+  SELECT foo FROM `table` USE INDEX (`key1`)
+  []
+
+  # add index hint with alias
+  SELECT foo FROM %t
+  { table => { alias => 't1', index => { type => 'force', keys => [qw/key1 key2/] } } }
+  SELECT foo FROM `table` AS `t1` FORCE INDEX (`key1`, `key2`)
+  []
+
 =head2 where array in
 
   # array
