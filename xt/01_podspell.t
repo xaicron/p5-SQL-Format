@@ -33,7 +33,6 @@ __DATA__
 SQL::Format
 Str
 formatters
-subquery
 
 # personal section
 xaicron

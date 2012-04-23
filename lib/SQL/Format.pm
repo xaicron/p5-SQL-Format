@@ -22,7 +22,6 @@ my $SPEC_TO_METHOD_MAP = {
     '%t' => '_table',
     '%w' => '_where',
     '%o' => '_options',
-    '%s' => '_subquery',
 };
 
 my $OP_ALIAS = {
@@ -405,20 +404,6 @@ sub _options {
     }
 
     return join ' ', @exprs;
-}
-
-sub _subquery {
-    my ($self, $val, $bind) = @_;
-    my $ret;
-    if (ref $val eq 'ARRAY') {
-        $ret = shift @$val;
-        push @$bind, @$val;
-    }
-    else {
-        $ret = $val;
-    }
-
-    return "($ret)";
 }
 
 sub _quote {
@@ -861,26 +846,6 @@ This option makes C<< HAVING >> clause. Argument value some as C<< where >> clau
   # @bind: ('bar')
 
 =back
-
-=item %s
-
-This format is a subquery. Syntax are:
-
-  [$statement, @bind_params]
-
-For examples:
-
-  ($stmt, @bind) = sqlf '%s', ['SELECT id FROM foo WHERE bar = ?', 'baz'];
-  # $stmt: (SELECT id FROM foo WHERE bar = ?)
-  # @bind: ('baz')
-
-  ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %s' => (
-      foo => 'bar', [
-          sqlf 'SELECT %c FROM %t WHERE %w' => (a => 'b', { c => 123 }),
-      ],
-  );
-  # $stmt: SELECT `foo` FROM `bar` WHERE (SELECT `a` FROM `b` WHERE (c = ?))
-  # @bind: [qw/123/]
 
 =back
 
