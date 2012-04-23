@@ -167,6 +167,18 @@ For example:
   WHERE (0=1)
   []
 
+  # subquery
+  WHERE %w
+  { id => \['SELECT x_id FROM foo WHERE bar = ? AND baz = ?', qw/hoge fuga/] }
+  WHERE (`id` IN (SELECT x_id FROM foo WHERE bar = ? AND baz = ?))
+  [qw/hoge fuga/]
+
+  # subquery using sqlf
+  WHERE %w
+  { id => \[sqlf('SELECT %c FROM %t WHERE %w', x_id => 'foo', { bar => 'hoge', baz => 'fuga'})] }
+  WHERE (`id` IN (SELECT `x_id` FROM `foo` WHERE (`bar` = ?) AND (`baz` = ?)))
+  [qw/hoge fuga/]
+
 =head2 where array and
 
   # scalars

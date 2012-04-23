@@ -341,6 +341,11 @@ sub _where {
                 $no_paren ? $k : "($k)";
             } sort keys %$v;
         }
+        elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
+            my $stmt = shift @$$v;
+            $k .= " IN ($stmt)";
+            push @$bind, @$$v;
+        }
         elsif (ref $v eq 'SCALAR') {
             # \'foo'
             $k .= " $$v";
