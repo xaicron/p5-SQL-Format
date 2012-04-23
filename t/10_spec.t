@@ -34,7 +34,7 @@ sub _eval {
     my $wantarray = wantarray;
     my $data = $wantarray ? [ eval "$line" ] : eval "$line";
     if ($@) {
-        fail "syntax error at line $.";
+        fail "$@: syntax error at line $.";
         exit;
     }
     return $wantarray ? @$data : $data;

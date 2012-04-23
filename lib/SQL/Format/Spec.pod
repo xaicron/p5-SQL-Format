@@ -627,4 +627,24 @@ For example:
   LIMIT 100 OFFSET 20
   []
 
+=head2 subquery
+
+  # scalar
+  %s
+  'SELECT id FROM foo'
+  (SELECT id FROM foo)
+  []
+
+  # array
+  %s
+  ['SELECT id FROM foo WHERE bar = ? AND baz = ?', qw/hoge fuga/]
+  (SELECT id FROM foo WHERE bar = ? AND baz = ?)
+  [qw/hoge fuga/]
+
+  # complex
+  SELECT %c FROM %t WHERE %s
+  foo => 'bar', [sqlf('SELECT %c FROM %t WHERE %w', a => 'b', { c => 123 })]
+  SELECT `foo` FROM `bar` WHERE (SELECT `a` FROM `b` WHERE (`c` = ?))
+  [qw/123/]
+
 =cut
