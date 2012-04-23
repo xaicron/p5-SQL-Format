@@ -18,11 +18,11 @@ our $LIMIT_DIALECT = 'LimitOffset';
 our $SELF = __PACKAGE__->new;
 
 my $SPEC_TO_METHOD_MAP = {
-    '%c' => 'columns',
-    '%t' => 'table',
-    '%w' => 'where',
-    '%o' => 'options',
-    '%s' => 'subquery',
+    '%c' => '_columns',
+    '%t' => '_table',
+    '%w' => '_where',
+    '%o' => '_options',
+    '%s' => '_subquery',
 };
 
 my $OP_ALIAS = {
@@ -74,7 +74,7 @@ sub sqlf {
     return join('',@tokens), @bind;
 }
 
-sub columns {
+sub _columns {
     my ($self, $val, $bind) = @_;
     my $ret;
 
@@ -123,7 +123,7 @@ sub columns {
     return $ret;
 }
 
-sub table {
+sub _table {
     my ($self, $val, $bind) = @_;
     my $ret;
 
@@ -153,7 +153,7 @@ sub table {
     return $ret;
 }
 
-sub where {
+sub _where {
     my ($self, $val, $bind) = @_;
 
     return unless ref $val eq 'HASH';
@@ -361,7 +361,7 @@ sub where {
     return $ret;
 }
 
-sub options {
+sub _options {
     my ($self, $val, $bind) = @_;
 
     my @exprs;
@@ -407,7 +407,7 @@ sub options {
     return join ' ', @exprs;
 }
 
-sub subquery {
+sub _subquery {
     my ($self, $val, $bind) = @_;
     my $ret;
     if (ref $val eq 'ARRAY') {
