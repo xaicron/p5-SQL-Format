@@ -25,18 +25,18 @@ $test->(
 
 $test->(
     desc    => 'no conditions (scalar)',
-    input   => [foo => [ bar => \'UNIX_TIMSTAMP()', hoge => 'fuga' ]],
+    input   => [foo => [ bar => \'UNIX_TIMESTAMP()', hoge => 'fuga' ]],
     expects => {
-        stmt => 'UPDATE `foo` SET `bar` = UNIX_TIMSTAMP(), `hoge` = ?',
+        stmt => 'UPDATE `foo` SET `bar` = UNIX_TIMESTAMP(), `hoge` = ?',
         bind => [qw/fuga/],
     },
 );
 
 $test->(
     desc    => 'no conditions (ref-array)',
-    input   => [foo => [ bar => \['UNIX_TIMSTAMP(?)', '2011-11-11'] ]],
+    input   => [foo => [ bar => \['UNIX_TIMESTAMP(?)', '2011-11-11'] ]],
     expects => {
-        stmt => 'UPDATE `foo` SET `bar` = UNIX_TIMSTAMP(?)',
+        stmt => 'UPDATE `foo` SET `bar` = UNIX_TIMESTAMP(?)',
         bind => [qw/2011-11-11/],
     },
 );
