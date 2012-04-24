@@ -10,6 +10,7 @@ while (defined(my $line = <$fh>)) {
     chomp $line;
     $line =~ s/^\s*|\s*$//;
 
+    last if $line =~ /^=cut/;
     next unless $line =~ /^=head2 (.*)/ || $spec;
     $spec = $1 || $spec;
 

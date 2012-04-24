@@ -639,4 +639,54 @@ For example:
   LIMIT 100 OFFSET 20
   []
 
+=head2 set cluase
+
+  # hash
+  UPDATE foo SET %s
+  { bar => 'baz' }
+  UPDATE foo SET `bar` = ?
+  [qw/baz/]
+
+  # hash multi
+  UPDATE foo SET %s
+  { bar => 'baz', hoge => 'fuga' }
+  UPDATE foo SET `bar` = ?, `hoge` = ?
+  [qw/baz fuga/]
+
+  # scalar ref into hash
+  UPDATE foo SET %s
+  { bar => \'UNIX_TIMESTAMP()' }
+  UPDATE foo SET `bar` = UNIX_TIMESTAMP()
+  []
+
+  # array ref into hash
+  UPDATE foo SET %s
+  { bar => \['UNIX_TIMESTAMP(?)', '2012-12-12'] }
+  UPDATE foo SET `bar` = UNIX_TIMESTAMP(?)
+  ['2012-12-12']
+
+  # array
+  UPDATE foo SET %s
+  [ bar => 'baz' ]
+  UPDATE foo SET `bar` = ?
+  [qw/baz/]
+
+  # array multi
+  UPDATE foo SET %s
+  [ hoge => 'fuga', bar => 'baz' ]
+  UPDATE foo SET `hoge` = ?, `bar` = ?
+  [qw/fuga baz/]
+
+  # scalar ref into array
+  UPDATE foo SET %s
+  [ bar => \'UNIX_TIMESTAMP()' ]
+  UPDATE foo SET `bar` = UNIX_TIMESTAMP()
+  []
+
+  # array ref into array
+  UPDATE foo SET %s
+  [ bar => \['UNIX_TIMESTAMP(?)', '2012-12-12'] ]
+  UPDATE foo SET `bar` = UNIX_TIMESTAMP(?)
+  ['2012-12-12']
+
 =cut

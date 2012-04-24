@@ -22,6 +22,7 @@ my $SPEC_TO_METHOD_MAP = {
     '%t' => '_table',
     '%w' => '_where',
     '%o' => '_options',
+    '%s' => '_set',
 };
 
 my $OP_ALIAS = {
@@ -497,6 +498,34 @@ sub _sort_expr {
     return $ret;
 }
 
+sub _set {
+    my ($self, $val, $bind) = @_;
+
+    my @set = ref $val eq 'HASH' ? map { $_ => $val->{$_} } sort keys %$val : @$val;
+    my @columns;
+    for (my $i = 0; $i < @set; $i += 2) {
+        my ($col, $val) = ($set[$i], $set[$i+1]);
+        my $quoted_col = _quote($col);
+        if (ref $val eq 'SCALAR') {
+            # foo => { bar => \'NOW()' }
+            push @columns, "$quoted_col = $$val";
+        }
+        elsif (ref $val eq 'REF' && ref $$val eq 'ARRAY') {
+            # foo => { bar => \['UNIX_TIMESTAMP(?)', '2011-11-11 11:11:11'] }
+            my ($stmt, @sub_bind) = @{$$val};
+            push @columns, "$quoted_col = $stmt";
+            push @$bind, @sub_bind;
+        }
+        else {
+            # foo => { bar => 'baz' }
+            push @columns, "$quoted_col = ?";
+            push @$bind, $val;
+        }
+    }
+
+    my $ret = join $self->{delimiter}, @columns;
+}
+
 sub new {
     my ($class, %args) = @_;
 
@@ -614,29 +643,8 @@ sub update {
     my $prefix       = delete $opts->{prefix} || 'UPDATE';
     my $quoted_table = _quote($table);
 
-    my @set = ref $set eq 'HASH' ? %$set : @$set;
-    my (@columns, @bind_params);
-    for (my $i = 0; $i < @set; $i += 2) {
-        my ($col, $val) = ($set[$i], $set[$i+1]);
-        my $quoted_col = _quote($col);
-        if (ref $val eq 'SCALAR') {
-            # foo => { bar => \'NOW()' }
-            push @columns, "$quoted_col = $$val";
-        }
-        elsif (ref $val eq 'REF' && ref $$val eq 'ARRAY') {
-            # foo => { bar => \['UNIX_TIMESTAMP(?)', '2011-11-11 11:11:11'] }
-            my ($stmt, @sub_bind) = @{$$val};
-            push @columns, "$quoted_col = $stmt";
-            push @bind_params, @sub_bind;
-        }
-        else {
-            # foo => { bar => 'baz' }
-            push @columns, "$quoted_col = ?";
-            push @bind_params, $val;
-        }
-    }
-
-    my $format = "$prefix $quoted_table SET ".join($self->{delimiter}, @columns);
+    my $set_clause = $self->_set($set, \my @bind_params);
+    my $format = "$prefix $quoted_table SET ".$set_clause;
 
     my @args;
     if (keys %{ $where || {} }) {
@@ -718,6 +726,12 @@ SQL::Format - Yet yet another SQL builder
   );
   # $stmt: SELECT * FROM `foo` WHERE (`hoge` = ?) ORDER BY `bar` DESC LIMIT 100 OFFSET 10
   # @bind: (`fuga`)
+
+  ($stmt, @bind) = sqlf 'UPDATE %t SET %s' => (
+      foo => { bar => 'baz', 'hoge => 'fuga' },
+  );
+  # $stmt: UPDATE `foo` SET `bar` = ?, `hoge` = ?
+  # @bind: ('baz', 'fuga')
 
   my $sqlf = SQL::Format->new(
       quote_char    => '',        # do not quote
@@ -850,6 +864,25 @@ This option makes C<< HAVING >> clause. Argument value some as C<< where >> clau
   # @bind: ('bar')
 
 =back
+
+=items %s
+
+This format is set clause.
+
+  ($stmt, @bind) = sqlf '%s', { bar => 'baz' };
+  # $stmt: `bar` = ?
+  # @bind: ('baz')
+
+  ($stmt, @bind) = sqlf '%s', { bar => 'baz', 'hoge' => \'UNIX_TIMESTAMP()' };
+  # $stmt: `bar` = ?, `hoge` = UNIX_TIMESTAMP()
+  # @bind: ('baz')
+
+  ($stmt, @bind) = sqlf '%s', {
+      bar  => 'baz',
+      hoge => \['CONCAT(?, ?)', 'ya', 'ppo'],
+  };
+  # $stmt: `bar` = ?, `hoge` = CONCAT(?, ?)
+  # @bind: ('baz', 'ya', 'ppo')
 
 =back
 
