@@ -639,7 +639,7 @@ For example:
   LIMIT 100 OFFSET 20
   []
 
-=head2 set cluase
+=head2 set clause
 
   # hash
   UPDATE foo SET %s
