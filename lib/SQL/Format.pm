@@ -175,10 +175,10 @@ sub _where {
                 my @values = @$v;
                 if ($v->[0] && $v->[0] eq '-and') {
                     $logic = 'AND';
-                    shift @values;
+                    @values = @values[1..$#values];
                 }
                 elsif ($v->[0] && $v->[0] eq '-or') {
-                    shift @values;
+                    @values = @values[1..$#values];
                 }
                 my @statements;
                 for my $arg (@values) {
@@ -342,9 +342,8 @@ sub _where {
             } sort keys %$v;
         }
         elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
-            my $stmt = shift @$$v;
-            $k .= " IN ($stmt)";
-            push @$bind, @$$v;
+            $k .= " IN ($$v->[0])";
+            push @$bind, @{$$v}[1..$#$$v];
         }
         elsif (ref $v eq 'SCALAR') {
             # \'foo'
