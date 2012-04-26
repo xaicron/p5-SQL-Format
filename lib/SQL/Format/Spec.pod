@@ -63,38 +63,38 @@ For example:
   
   # scalar ref
   SELECT %c FROM table
-  \'foo AS bar'
-  SELECT foo AS bar FROM table
+  \'foo bar'
+  SELECT foo bar FROM table
   []
   
   # scalar ref in array
   SELECT %c FROM table
-  [\'foo AS bar', 'baz']
-  SELECT foo AS bar, `baz` FROM table
+  [\'foo bar', 'baz']
+  SELECT foo bar, `baz` FROM table
   []
 
   # hash in array
   SELECT %c FROM table
   [ { foo => 'bar' } ]
-  SELECT `foo` AS `bar` FROM table
+  SELECT `foo` `bar` FROM table
   []
 
   # array in array
   SELECT %c FROM table
   [ [foo => 'bar'] ]
-  SELECT `foo` AS `bar` FROM table
+  SELECT `foo` `bar` FROM table
   []
 
   # scalar ref into array in array
   SELECT %c FROM table
   [ [\'UNIX_TIMESTAMP()' => 'bar'] ]
-  SELECT UNIX_TIMESTAMP() AS `bar` FROM table
+  SELECT UNIX_TIMESTAMP() `bar` FROM table
   []
 
   # ref array in array
   SELECT %c FROM table
   [ \[\'UNIX_TIMESTAMP(?)' => 'bar', '2012-12-12 12:12:12'] ]
-  SELECT UNIX_TIMESTAMP(?) AS `bar` FROM table
+  SELECT UNIX_TIMESTAMP(?) `bar` FROM table
   ['2012-12-12 12:12:12']
 
 =head2 table
@@ -108,13 +108,13 @@ For example:
   # hash
   SELECT foo FROM %t
   { table => 't' }
-  SELECT foo FROM `table` AS `t`
+  SELECT foo FROM `table` `t`
   []
 
   # hash multi value
   SELECT foo FROM %t
   { tableA => 'a', tableB => 'b' }
-  SELECT foo FROM `tableA` AS `a`, `tableB` AS `b`
+  SELECT foo FROM `tableA` `a`, `tableB` `b`
   []
 
   # array
@@ -126,7 +126,7 @@ For example:
   # array mixied
   SELECT foo FROM %t
   [ 't1', { t2 => 'foo' }, { t3 => 'bar', t4 => 'baz' } ]
-  SELECT foo FROM `t1`, `t2` AS `foo`, `t3` AS `bar`, `t4` AS `baz`
+  SELECT foo FROM `t1`, `t2` `foo`, `t3` `bar`, `t4` `baz`
   []
 
   # add index hint
@@ -150,7 +150,7 @@ For example:
   # add index hint with alias
   SELECT foo FROM %t
   { table => { alias => 't1', index => { type => 'force', keys => [qw/key1 key2/] } } }
-  SELECT foo FROM `table` AS `t1` FORCE INDEX (`key1`, `key2`)
+  SELECT foo FROM `table` `t1` FORCE INDEX (`key1`, `key2`)
   []
 
 =head2 where array in

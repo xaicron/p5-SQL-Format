@@ -88,19 +88,19 @@ sub _columns {
                 my $ref = ref $_;
                 if ($ref eq 'HASH') {
                     my ($term, $col) = %$_;
-                    $ret = _quote($term).' AS '._quote($col);
+                    $ret = _quote($term).' '._quote($col);
                 }
                 elsif ($ref eq 'ARRAY') {
                     my ($term, $col) = @$_;
                     $ret = (
                         ref $term eq 'SCALAR' ? $$term : _quote($term)
-                    ).' AS '._quote($col);
+                    ).' '._quote($col);
                 }
                 elsif ($ref eq 'REF' && ref $$_ eq 'ARRAY') {
                     my ($term, $col, @params) = @{$$_};
                     $ret = (
                         ref $term eq 'SCALAR' ? $$term : _quote($term)
-                    ).' AS '._quote($col);
+                    ).' '._quote($col);
                     push @$bind, @params;
                 }
                 else {
@@ -429,7 +429,7 @@ sub _complex_table_expr {
         my ($k, $v) = ($_, $stuff->{$_});
         my $ret = _quote($k);
         if (ref $v eq 'HASH') {
-            $ret .= ' AS '._quote($v->{alias}) if $v->{alias};
+            $ret .= ' '._quote($v->{alias}) if $v->{alias};
             if (exists $v->{index} && ref $v->{index}) {
                 my $type = uc($v->{index}{type} || 'USE');
                 croak "unkown index type: $type"
@@ -444,7 +444,7 @@ sub _complex_table_expr {
             }
         }
         else {
-            $ret .= ' AS '._quote($v);
+            $ret .= ' '._quote($v);
         }
         $ret;
     } sort keys %$stuff;
@@ -790,12 +790,12 @@ This format is a table name.
 
   ($stmt, @bind) = sqlf '%t', 'table_name';        # $stmt => `table_name`
   ($stmt, @bind) = sqlf '%t', [qw/tableA tableB/]; # $stmt => `tableA`, `tableB`
-  ($stmt, @bind) = sqlf '%t', { tableA => 't1' };  # $stmt => `tableA` AS `t1`
+  ($stmt, @bind) = sqlf '%t', { tableA => 't1' };  # $stmt => `tableA` `t1`
   ($stmt, @bind) = sqlf '%t', {
       tableA => {
           index => { type => 'force', keys => [qw/key1 key2/] },
           alias => 't1',
-  }; # $stmt: `tableA` AS `t1` FORCE INDEX (`key1`, `key2`)
+  }; # $stmt: `tableA` `t1` FORCE INDEX (`key1`, `key2`)
 
 =item %c
 
