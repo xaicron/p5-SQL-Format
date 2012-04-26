@@ -22,6 +22,7 @@ my $SPEC_TO_METHOD_MAP = {
     '%t' => '_table',
     '%w' => '_where',
     '%o' => '_options',
+    '%j' => '_join',
     '%s' => '_set',
 };
 
@@ -60,7 +61,7 @@ sub sqlf {
     my $format = shift;
 
     my @bind;
-    my @tokens = split m#(%[ctwos])(?=\W|$)#, $format;
+    my @tokens = split m#(%[ctwosj])(?=\W|$)#, $format;
     for (my $i = 1; $i < @tokens; $i += 2) {
         my $spec = $tokens[$i];
         my $method = $SPEC_TO_METHOD_MAP->{$spec};
@@ -409,6 +410,55 @@ sub _options {
     }
 
     return join ' ', @exprs;
+}
+
+sub _join {
+    my ($self, $val, $bind) = @_;
+    croak '%j mast be HASH ref specified' unless ref $val eq 'HASH';
+    croak 'table and condition options must be specified at %j'
+        unless $val->{table} && $val->{condition};
+
+    my $ret = sprintf '%s JOIN ', uc($val->{type} || 'INNER');
+    $ret .= $self->_table($val->{table}, $bind);
+
+    if (ref $val->{condition} eq 'ARRAY') {
+        $ret .= ' USING ('.(
+            join $DELIMITER, map { _quote($_) } @{$val->{condition}}
+        ).')';
+    }
+    elsif (ref $val->{condition} eq 'HASH') {
+        my $cond = $val->{condition};
+        my $no_paren = keys %$cond > 1 ? 0 : 1;
+        $ret .= ' ON '.(join ' AND ', map {
+            my ($k, $v) = ($_, $cond->{$_});
+            my $ret;
+            if (ref $v eq 'HASH') {
+                my $no_paren = keys %$v > 1 ? 0 : 1;
+                $ret = join ' AND ', map {
+                    my $op = $_;
+                    my $ret;
+                    if (ref $v->{$op} eq 'REF' && ref ${$v->{$op}} eq 'ARRAY') {
+                        my $v = ${$v->{$op}};
+                        $ret = _quote($k)." $op ".$v->[0];
+                        push @$bind, @{$v}[1..$#$v];
+                    }
+                    else {
+                        $ret = _quote($k)." $op "._quote($v->{$_});
+                    }
+                    $no_paren ? $ret : "($ret)";
+                } sort keys %$v;
+            }
+            else {
+                $ret = _quote($k).' = '._quote($v);
+            }
+            $no_paren ? $ret : "($ret)";
+        } sort keys %$cond);
+    }
+    else {
+        $ret .= ' ON '.$val->{condition};
+    }
+
+    return $ret;
 }
 
 sub _quote {
@@ -864,6 +914,24 @@ This option makes C<< HAVING >> clause. Argument value some as C<< where >> clau
   # @bind: ('bar')
 
 =back
+
+=item %j
+
+This format is join clause.
+
+  ($stmt, @bind) = sqlf '%j', { table => 'bar', condition => 'foo.id = bar.id' };
+  # $stmt: INNER JOIN `bar` ON (foo.id = bar.id)
+
+  ($stmt, @bind) = sqlf '%j', {
+      type      => 'left',
+      table     => { bar => 'b' },
+      condition => {
+          'f.id'         => 'b.id',
+          'f.updated_at' => \['UNIX_TIMESTAMP()', '2012-12-12']
+          'f.created_at' => { '>' => 'b.created_at' },
+      },
+  };
+  # $stmt: LEFT JOIN `bar` `b` ON (`f`.`id` = `b.id`)
 
 =items %s
 

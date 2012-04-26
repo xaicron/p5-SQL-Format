@@ -689,4 +689,54 @@ For example:
   UPDATE foo SET `bar` = UNIX_TIMESTAMP(?)
   ['2012-12-12']
 
+=head2 join
+
+  # inner join on scalar
+  %j
+  { table => 'bar', condition => 'foo.id = bar.id' }
+  INNER JOIN `bar` ON foo.id = bar.id
+  []
+
+  # inner join on ref hash
+  %j
+  { table => 'bar', condition => { 'foo.id' => 'bar.id' } }
+  INNER JOIN `bar` ON `foo`.`id` = `bar`.`id`
+  []
+
+  # inner join on hash multi
+  %j
+  { table => 'bar', condition => { 'foo.id' => 'bar.id', 'foo.created_at' => 'bar.created_at' } }
+  INNER JOIN `bar` ON (`foo`.`created_at` = `bar`.`created_at`) AND (`foo`.`id` = `bar`.`id`)
+  []
+
+  # inner join on hash with op
+  %j
+  { table => 'bar', condition => { 'foo.id' => { '>' => 'bar.id' } } }
+  INNER JOIN `bar` ON `foo`.`id` > `bar`.`id`
+  []
+
+  # inner join on hash with op multi
+  %j
+  { table => 'bar', condition => { 'foo.id' => { '<' => 'bar.id', '>' => \['?', '12345'] } } }
+  INNER JOIN `bar` ON (`foo`.`id` < `bar`.`id`) AND (`foo`.`id` > ?)
+  [qw/12345/]
+
+  # inner join on array
+  %j
+  { table => 'bar', condition => [qw/id created_at/] }
+  INNER JOIN `bar` USING (`id`, `created_at`)
+  []
+
+  # with alias
+  %j
+  { table => { bar => 'b' }, condition => { 'f.id' => 'b.id' } }
+  INNER JOIN `bar` `b` ON `f`.`id` = `b`.`id`
+  []
+
+  # left join
+  %j
+  { type => 'left', table => { bar => 'b' }, condition => { 'f.id' => 'b.id' } }
+  LEFT JOIN `bar` `b` ON `f`.`id` = `b`.`id`
+  []
+
 =cut
