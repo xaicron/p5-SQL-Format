@@ -93,4 +93,27 @@ $test->(
     },
 );
 
+$test->(
+    desc => 'join',
+    input => [
+        { foo => 'f' },
+        [qw/f.id b.name/],
+        { 'f.created_at' => { '>' => \['UNIX_TIMESTAMP() - ?', 60 * 10] } },
+        {
+            order_by => 'f.id',
+            limit    => 10,
+            offset   => 20,
+            join     => {
+                type      => 'left',
+                table     => { bar => 'b' },
+                condition => [qw/id/],
+            },
+        },
+    ],
+    expects => {
+        stmt => 'SELECT `f`.`id`, `b`.`name` FROM `foo` `f` LEFT JOIN `bar` `b` USING (`id`) WHERE (`f`.`created_at` > UNIX_TIMESTAMP() - ?) ORDER BY `f`.`id` LIMIT 10 OFFSET 20',
+        bind => [qw/600/],
+    },
+);
+
 done_testing;

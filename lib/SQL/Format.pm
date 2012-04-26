@@ -623,6 +623,11 @@ sub select {
     my $suffix = delete $opts->{suffix};
     my $format = "$prefix %c FROM %t";
     my @args   = ($cols, $table);
+
+    if (my $join = delete $opts->{join}) {
+        $format .= ' %j';
+        push @args, $join;
+    }
     if (keys %{ $where || {} }) {
         $format .= ' WHERE %w';
         push @args, $where;
@@ -1103,6 +1108,8 @@ Default value is C<< '' >>
 =item $opts->{group_by}
 
 =item $opts->{having}
+
+=item $opts->{join}
 
 See also C<< %o >> format.
 
