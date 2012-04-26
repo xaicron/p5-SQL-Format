@@ -933,7 +933,7 @@ This format is join clause.
   };
   # $stmt: LEFT JOIN `bar` `b` ON (`f`.`id` = `b.id`)
 
-=items %s
+=item %s
 
 This format is set clause.
 
