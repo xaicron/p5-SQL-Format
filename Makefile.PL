@@ -15,3 +15,12 @@ repository 'http://github.com/xaicron/p5-SQL-Format/';
 bugtracker 'http://github.com/xaicron/p5-SQL-Format/issues';
 
 WriteAll;
+
+package MY;
+
+# do not install README.pod
+sub init_dirscan {
+    my $self = shift;
+    $self->SUPER::init_dirscan();
+    delete $self->{PM}{'README.pod'};
+}
