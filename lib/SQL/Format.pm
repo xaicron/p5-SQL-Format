@@ -452,6 +452,11 @@ sub _join {
                         $no_paren ? $ret : "($ret)";
                     } sort keys %$v;
                 }
+                elsif (ref $v eq 'REF' && ref $$v eq 'ARRAY') {
+                    my $v = $$v;
+                    $ret = _quote($k).' = '._quote($v->[0]);
+                    push @$bind, @{$v}[1..$#$v];
+                }
                 else {
                     $ret = _quote($k).' = '._quote($v);
                 }

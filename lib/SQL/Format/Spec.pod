@@ -715,6 +715,12 @@ For example:
   INNER JOIN `bar` ON `foo`.`id` > `bar`.`id`
   []
 
+  # inner join on hash with ref array
+  %j
+  { table => 'bar', condition => { 'foo.id' => \['UNIX_TIMESTAMP(?)', '2012-12-12'] } }
+  INNER JOIN `bar` ON `foo`.`id` = UNIX_TIMESTAMP(?)
+  ['2012-12-12']
+
   # inner join on hash with op multi
   %j
   { table => 'bar', condition => { 'foo.id' => { '<' => 'bar.id', '>' => \['?', '12345'] } } }
