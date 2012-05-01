@@ -71,6 +71,16 @@ cmpthese $count, {
 }, 'all';
 
 sub show_version {
+    my $cpu = '';
+    if ($^O eq 'linux') {
+        $cpu = (split ': ', scalar `grep "model name" /proc/cpuinfo | uniq`)[1];
+    }
+    elsif ($^O eq 'darwin') {
+        $cpu = (split ': ', scalar `sysctl machdep.cpu.brand_string`)[1];
+    }
+    chomp($cpu);
+
+    say "# CPU: $cpu";
     say "# perl-$^V ($Config{archname})";
     printf "# %-14s: v%s\n", $_, $_->VERSION for @_;
 }
