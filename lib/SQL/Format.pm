@@ -829,6 +829,8 @@ SQL::Format - Yet yet another SQL builder
 
 SQL::Format is a easy to SQL query building library.
 
+B<< THIS MODULE IS ALPHA LEVEL INTERFACE!! >>
+
 =head1 FUNCTIONS
 
 =head2 sqlf($format, @args)
