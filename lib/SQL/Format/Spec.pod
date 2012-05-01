@@ -751,4 +751,21 @@ For example:
   LEFT JOIN `bar` `b` ON `f`.`id` = `b`.`id` INNER JOIN `hoge` `h` ON `h`.`id` = `f`.`id`
   []
 
+=head1 AUTHOR
+
+xaicron E<lt>xaicron {at} cpan.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2012 - xaicron
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<< SQL::Format >>
+
 =cut
