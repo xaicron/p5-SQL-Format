@@ -414,51 +414,57 @@ sub _options {
 
 sub _join {
     my ($self, $val, $bind) = @_;
-    croak '%j mast be HASH ref specified' unless ref $val eq 'HASH';
-    croak 'table and condition options must be specified at %j'
-        unless $val->{table} && $val->{condition};
 
-    my $ret = sprintf '%s JOIN ', uc($val->{type} || 'INNER');
-    $ret .= $self->_table($val->{table}, $bind);
+    my @statements;
+    $val = [$val] unless ref $val eq 'ARRAY';
+    for my $param (@$val) {
+        croak '%j mast be HASH ref specified' unless ref $param eq 'HASH';
+        croak 'table and condition options must be specified at %j'
+            unless $param->{table} && $param->{condition};
 
-    if (ref $val->{condition} eq 'ARRAY') {
-        $ret .= ' USING ('.(
-            join $DELIMITER, map { _quote($_) } @{$val->{condition}}
-        ).')';
-    }
-    elsif (ref $val->{condition} eq 'HASH') {
-        my $cond = $val->{condition};
-        my $no_paren = keys %$cond > 1 ? 0 : 1;
-        $ret .= ' ON '.(join ' AND ', map {
-            my ($k, $v) = ($_, $cond->{$_});
-            my $ret;
-            if (ref $v eq 'HASH') {
-                my $no_paren = keys %$v > 1 ? 0 : 1;
-                $ret = join ' AND ', map {
-                    my $op = $_;
-                    my $ret;
-                    if (ref $v->{$op} eq 'REF' && ref ${$v->{$op}} eq 'ARRAY') {
-                        my $v = ${$v->{$op}};
-                        $ret = _quote($k)." $op ".$v->[0];
-                        push @$bind, @{$v}[1..$#$v];
-                    }
-                    else {
-                        $ret = _quote($k)." $op "._quote($v->{$_});
-                    }
-                    $no_paren ? $ret : "($ret)";
-                } sort keys %$v;
-            }
-            else {
-                $ret = _quote($k).' = '._quote($v);
-            }
-            $no_paren ? $ret : "($ret)";
-        } sort keys %$cond);
-    }
-    else {
-        $ret .= ' ON '.$val->{condition};
+        my $ret = sprintf '%s JOIN ', uc($param->{type} || 'INNER');
+        $ret .= $self->_table($param->{table}, $bind);
+
+        if (ref $param->{condition} eq 'ARRAY') {
+            $ret .= ' USING ('.(
+                join $DELIMITER, map { _quote($_) } @{$param->{condition}}
+            ).')';
+        }
+        elsif (ref $param->{condition} eq 'HASH') {
+            my $cond = $param->{condition};
+            my $no_paren = keys %$cond > 1 ? 0 : 1;
+            $ret .= ' ON '.(join ' AND ', map {
+                my ($k, $v) = ($_, $cond->{$_});
+                my $ret;
+                if (ref $v eq 'HASH') {
+                    my $no_paren = keys %$v > 1 ? 0 : 1;
+                    $ret = join ' AND ', map {
+                        my $op = $_;
+                        my $ret;
+                        if (ref $v->{$op} eq 'REF' && ref ${$v->{$op}} eq 'ARRAY') {
+                            my $v = ${$v->{$op}};
+                            $ret = _quote($k)." $op ".$v->[0];
+                            push @$bind, @{$v}[1..$#$v];
+                        }
+                        else {
+                            $ret = _quote($k)." $op "._quote($v->{$_});
+                        }
+                        $no_paren ? $ret : "($ret)";
+                    } sort keys %$v;
+                }
+                else {
+                    $ret = _quote($k).' = '._quote($v);
+                }
+                $no_paren ? $ret : "($ret)";
+            } sort keys %$cond);
+        }
+        else {
+            $ret .= ' ON '.$param->{condition};
+        }
+        push @statements, $ret;
     }
 
-    return $ret;
+    return join ' ', @statements;
 }
 
 sub _quote {

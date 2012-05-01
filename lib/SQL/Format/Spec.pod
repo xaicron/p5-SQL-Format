@@ -739,4 +739,10 @@ For example:
   LEFT JOIN `bar` `b` ON `f`.`id` = `b`.`id`
   []
 
+  # array
+  %j
+  [ { type => 'left', table => { bar => 'b'}, condition => { 'f.id' => 'b.id' } }, { table => { hoge => 'h' }, condition => { 'h.id' => 'f.id' } } ]
+  LEFT JOIN `bar` `b` ON `f`.`id` = `b`.`id` INNER JOIN `hoge` `h` ON `h`.`id` = `f`.`id`
+  []
+
 =cut
