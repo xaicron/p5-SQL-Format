@@ -363,6 +363,24 @@ For example:
   WHERE (`id` LIKE ? OR `id` LIKE "bar%")
   [qw/%foo/]
 
+  # with escape
+  WHERE %w
+  { id => { LIKE => { '@' => '@_foo%' } } }
+  WHERE (`id` LIKE ? ESCAPE ?)
+  [qw/@_foo% @/]
+
+  # scalar ref with escape
+  WHERE %w
+  { id => { LIKE => { '@' => \'"@_foo%"' } } }
+  WHERE (`id` LIKE "@_foo%" ESCAPE ?)
+  [qw/@/]
+
+  # array with escape
+  WHERE %w
+  { id => { LIKE => { '@' => [\'"@_foo%"', '@_bar%'] } } }
+  WHERE (`id` LIKE "@_foo%" ESCAPE ? OR `id` LIKE ? ESCAPE ?)
+  [qw/@ @_bar% @/]
+
 =head2 where hash no like
 
   # scalar

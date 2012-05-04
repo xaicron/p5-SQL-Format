@@ -277,9 +277,14 @@ sub _where {
                 }
                 elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
                     my $ref = ref $v;
+                    my $escape_char;
+                    if ($ref eq 'HASH') {
+                        ($escape_char, $v) = %$v;
+                        $ref = ref $v;
+                    }
                     if ($ref eq 'ARRAY') {
                         # { LIKE => ['%foo', 'bar%'] }
-                        # { LIKE => [\'%foo', \'bar%'] }
+                        # { LIKE => [\'"%foo"', \'"bar%"'] }
                         my @stmt;
                         for my $value (@$v) {
                             if (ref $value eq 'SCALAR') {
@@ -289,16 +294,28 @@ sub _where {
                                 push @stmt, '?';
                                 push @$bind, $value;
                             }
+                            if ($escape_char) {
+                                $stmt[-1] .= ' ESCAPE ?';
+                                push @$bind, $escape_char;
+                            }
                         }
                         $k = join ' OR ', map { "$k $op $_" } @stmt;
                     }
                     elsif ($ref eq 'SCALAR') {
                         # { LIKE => \'"foo%"' }
                         $k .= " $op $$v";
+                        if ($escape_char) {
+                            $k .= ' ESCAPE ?';
+                            push @$bind, $escape_char;
+                        }
                     }
                     else {
                         $k .= " $op ?";
                         push @$bind, $v;
+                        if ($escape_char) {
+                            $k .= ' ESCAPE ?';
+                            push @$bind, $escape_char;
+                        }
                     }
                 }
                 elsif (ref $v eq 'SCALAR') {
