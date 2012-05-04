@@ -27,12 +27,31 @@ my $SPEC_TO_METHOD_MAP = {
 };
 
 my $OP_ALIAS = {
-    -IN          => 'IN',
-    -NOT_IN      => 'NOT IN',
-    -BETWEEN     => 'BETWEEN',
-    -NOT_BETWEEN => 'NOT BETWEEN',
-    -LIKE        => 'LIKE',
-    -NOT_LIKE    => 'NOT LIKE',
+    -IN              => 'IN',
+    -NOT_IN          => 'NOT IN',
+    -BETWEEN         => 'BETWEEN',
+    -NOT_BETWEEN     => 'NOT BETWEEN',
+    -LIKE            => 'LIKE',
+    -NOT_LIKE        => 'NOT LIKE',
+    -LIKE_BINARY     => 'LIKE BINARY',
+    -NOT_LIKE_BINARY => 'NOT LIKE BINARY',
+};
+
+my $OP_TYPE_MAP = {
+    in => {
+        'IN'     => 1,
+        'NOT IN' => 1,
+    },
+    between => {
+        'BETWEEN'     => 1,
+        'NOT BETWEEN' => 1,
+    },
+    like => {
+        'LIKE'            => 1,
+        'NOT LIKE'        => 1,
+        'LIKE BINARY'     => 1,
+        'NOT LIKE BINARY' => 1,
+    },
 };
 
 my $SORT_OP_ALIAS = {
@@ -207,7 +226,7 @@ sub _where {
                 my $k = $k;
                 my ($op, $v) = (uc($_), $v->{$_});
                 $op = $OP_ALIAS->{$op} || $op;
-                if ($op eq 'IN' || $op eq 'NOT IN') {
+                if ($OP_TYPE_MAP->{in}{$op}) {
                     my $ref = ref $v;
                     if ($ref eq 'ARRAY') {
                         unless (@$v) {
@@ -239,7 +258,7 @@ sub _where {
                         $k .= $op eq 'IN' ? ' IS NULL' : ' IS NOT NULL';
                     }
                 }
-                elsif ($op eq 'BETWEEN' || $op eq 'NOT BETWEEN') {
+                elsif ($OP_TYPE_MAP->{between}{$op}) {
                     my $ref = ref $v;
                     if ($ref eq 'ARRAY') {
                         # { BETWEEN => ['foo', 'bar'] }
@@ -275,7 +294,7 @@ sub _where {
                         # noop
                     }
                 }
-                elsif ($op eq 'LIKE' || $op eq 'NOT LIKE') {
+                elsif ($OP_TYPE_MAP->{like}{$op}) {
                     my $ref = ref $v;
                     my $escape_char;
                     if ($ref eq 'HASH') {

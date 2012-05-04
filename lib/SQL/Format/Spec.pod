@@ -381,7 +381,19 @@ For example:
   WHERE (`id` LIKE "@_foo%" ESCAPE ? OR `id` LIKE ? ESCAPE ?)
   [qw/@ @_bar% @/]
 
-=head2 where hash no like
+  # -like_binaray
+  WHERE %w
+  { id => { -LIKE_BINARY => '%foo' } }
+  WHERE (`id` LIKE BINARY ?)
+  [qw/%foo/]
+
+  # like binaray
+  WHERE %w
+  { id => { 'LIKE BINARY' => '%foo' } }
+  WHERE (`id` LIKE BINARY ?)
+  [qw/%foo/]
+
+=head2 where hash not like
 
   # scalar
   WHERE %w
@@ -405,6 +417,18 @@ For example:
   WHERE %w
   { id => { 'NOT LIKE' => ['%foo', \'"bar%"'] } }
   WHERE (`id` NOT LIKE ? OR `id` NOT LIKE "bar%")
+  [qw/%foo/]
+
+  # -not_like_binaray
+  WHERE %w
+  { id => { -NOT_LIKE_BINARY => '%foo' } }
+  WHERE (`id` NOT LIKE BINARY ?)
+  [qw/%foo/]
+
+  # like binaray
+  WHERE %w
+  { id => { 'NOT LIKE BINARY' => '%foo' } }
+  WHERE (`id` NOT LIKE BINARY ?)
   [qw/%foo/]
 
 =head2 where hash between
