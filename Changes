@@ -1,4 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.02  Sat May  5 03:26:13 2012
+    - added ESCAPE clause at LIKE
+    - added LIKE BINARY clause
+
 0.01  Wed May  2 06:12:54 2012
     - original version
