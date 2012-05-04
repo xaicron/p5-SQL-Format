@@ -13,7 +13,9 @@ use Config;
 use Data::Dumper;
 
 sub DEBUG () { 0 }
-my $count ||= 10000;
+my $count ||= -1;
+
+#$SQL::Format::QUOTE_CHAR = '';
 
 show_version(qw{
     SQL::Abstract
@@ -43,13 +45,14 @@ cmpthese $count, {
         say Dumper [$stmt, @bind] if DEBUG;
     },
     'SQL::Format' => sub {
-#        my ($stmt, @bind) = sqlf 'SELECT %c FROM foo WHERE %w' => {
-#            columns => [qw/bar baz/],
-#            where   => {
+#        my ($stmt, @bind) = sqlf 'SELECT %c FROM %t WHERE %w' => (
+#            [qw/bar baz/],
+#            'foo',
+#            {
 #                hoge => [qw/fuga piyo/],
 #                fizz => { '>' => 'bazz' },
 #            },
-#        };
+#        );
         my ($stmt, @bind) = $sqlf->select(foo => [qw/bar baz/], {
             hoge => [qw/fuga piyo/],
             fizz => { '>' => 'bazz' },
