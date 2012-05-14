@@ -10,7 +10,7 @@ This cheat sheet rules are:
 
   # Comment
   Input  : $format
-  Input  : \%option
+  Input  : \@arguments
   Expects: $stmt 
   Expects: \@bind
 

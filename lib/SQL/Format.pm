@@ -1292,6 +1292,10 @@ See also C<< %o >> format.
 
 This method returns SQL string and bind parameters for C<< DELETE >> statement.
 
+  my ($stmt, @bind) = $sqlf->delete(foo => { bar => 'baz' });
+  # $stmt: DELETE FROM `foo` WHERE (`bar = ?)
+  # @bind: ('baz')
+
 Argument details are:
 
 =over
@@ -1310,7 +1314,7 @@ Same as C<< %w >> format.
 
 =item $opts->{prefix}
 
-This is a prefix for UPDATE statement.
+This is a prefix for DELETE statement.
 
   my ($stmt, @bind) = $sqlf->delete(foo => { bar => 'baz' }, { prefix => 'DELETE LOW_PRIORITY' });
   # $stmt: DELETE LOW_PRIORITY FROM `foo` WHERE (`bar` = ?)
