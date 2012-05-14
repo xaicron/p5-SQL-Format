@@ -790,6 +790,74 @@ sub delete {
     sqlf($format, @args);
 }
 
+sub insert_multi {
+    my ($self, $table, $cols, $values, $opts) = @_;
+    croak 'Usage: $sqlf->insert_multi($table, \@cols, [ \@values1, \@values2, ... ] [, \%opts])'
+        unless ref $cols eq 'ARRAY' && ref $values eq 'ARRAY';
+
+    local $SELF          = $self;
+    local $DELIMITER     = $self->{delimiter};
+    local $NAME_SEP      = $self->{name_sep};
+    local $QUOTE_CHAR    = $self->{quote_char};
+    local $LIMIT_DIALECT = $self->{limit_dialect};
+
+    my $prefix       = $opts->{prefix} || 'INSERT INTO';
+    my $quoted_table = _quote($table);
+
+    my $columns_num = @$cols;
+    my @bind_params;
+    my @values_stmt;
+    for my $value (@$values) {
+        my @bind_cols;
+        for (my $i = 0; $i < $columns_num; $i++) {
+            my $val = $value->[$i];
+            if (ref $val eq 'SCALAR') {
+                # \'NOW()'
+                push @bind_cols, $$val;
+            }
+            elsif (ref $val eq 'REF' && ref $$val eq 'ARRAY') {
+                # \['UNIX_TIMESTAMP(?)', '2011-11-11 11:11:11']
+                my ($expr, @sub_bind) = @{$$val};
+                push @bind_cols, $expr;
+                push @bind_params, @sub_bind;
+            }
+            else {
+                # 'baz'
+                push @bind_cols, '?';
+                push @bind_params, $val;
+            }
+        }
+        push @values_stmt, '('.join($self->{delimiter}, @bind_cols).')';
+    }
+
+    my $stmt = "$prefix $quoted_table "
+        . '('.join($self->{delimiter}, map { _quote($_) } @$cols).') '
+        . 'VALUES '.join($self->{delimiter}, @values_stmt);
+
+    if ($opts->{update}) {
+        my ($update_stmt, @bind) = sqlf '%s', $opts->{update};
+        $stmt .= " ON DUPLICATE KEY UPDATE $update_stmt";
+        push @bind_params, @bind;
+    }
+
+    return $stmt, @bind_params;
+}
+
+sub insert_multi_from_hash {
+    my ($self, $table, $values, $opts) = @_;
+    croak 'Usage: $sqlf->insert_multi_from_hash($table, [ { colA => $valA, colB => $valB }, { ... } ] [, \%opts])'
+        unless ref $values eq 'ARRAY' && ref $values->[0] eq 'HASH';
+
+    my $cols = [ keys %{$values->[0]} ];
+    my $new_values = [];
+    for my $value (@$values) {
+        push @$new_values, [ @$value{@$cols} ];
+    }
+
+    $self->insert_multi($table, $cols, $new_values, $opts);
+}
+
+
 1;
 __END__
 
@@ -1329,6 +1397,108 @@ Default value is C<< DELETE >>.
 See also C<< %o >> format.
 
 =back
+
+=back
+
+=head2 insert_multi($table, \@cols, \@values [, \%opts])
+
+This method returns SQL string and bind parameters for bulk insert.
+
+  my ($stmt, @bind) = $self->insert_multi(
+      foo => [qw/bar baz/],
+      [
+          [qw/hoge fuga/],
+          [qw/fizz buzz/],
+      ],
+  );
+  # $stmt: INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?), (?, ?)
+  # @bind: (qw/hoge fuga fizz buzz/)
+
+Argument details are:
+
+=over
+
+=item $table
+
+This is a table name for target of INSERT.
+
+=item \@cols
+
+This is a columns for target of INSERT.
+
+=item \@values
+
+This is a values parameters. Must be ARRAY within ARRAY.
+
+  my ($stmt, @bind) = $sqlf->insert_multi(
+      foo => [qw/bar baz/], [
+          [qw/foo bar/],
+          [\'NOW()', \['UNIX_TIMESTAMP(?)', '2012-12-12 12:12:12'] ],
+      ],
+  );
+  # $stmt: INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?), (NOW(), UNIX_TIMESTAMP(?))
+  # @bind: (qw/foo bar/, '2012-12-12 12:12:12')
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is a prefix for INSERT statement.
+
+  my ($stmt, @bind) = $sqlf->insert_multi(..., { prefix => 'INSERT IGNORE INTO' });
+  # $stmt: INSERT IGNORE INTO ...
+
+Default value is C<< INSERT INTO >>.
+
+=item $opts->{update}
+
+Some as C<< %s >> format.
+
+If this value specified then add C<< ON DUPLICATE KEY UPDATE >> statement.
+
+  my ($stmt, @bind) = $sqlf->insert_multi(
+      foo => [qw/bar baz/],
+      [
+          [qw/hoge fuga/],
+          [qw/fizz buzz/],
+      ],
+      { update => { bar => 'piyo' } },
+  );
+  # $stmt: INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?), (?, ?) ON DUPLICATE KEY UPDATE `bar` = ?
+  # @bind: (qw/hoge fuga fizz buzz piyo/)
+
+=back
+
+=back
+
+=head2 insert_multi_from_hash($table, \@values [, \%opts])
+
+This method is a wrapper for C<< insert_multi() >>.
+
+Argument dialects are:
+
+=over
+
+=item $table
+
+Same as C<< insert_multi() >>
+
+=item \@values
+
+This is a values parameters. Must be HASH within ARRAY.
+
+  my ($stmt, @bind) = $sqlf->insert_multi_from_hash(foo => [
+      { bar => 'hoge', baz => 'fuga' },
+      { bar => 'fizz', baz => 'buzz' },
+  ]);
+  # $stmt: INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?), (?, ?)
+  # @bind: (qw/hoge fuga fizz buzz/)
+
+=item \%opts
+
+Same as C<< insert_multi() >>
 
 =back
 
