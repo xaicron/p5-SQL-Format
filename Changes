@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.03  Wed May 16 01:02:58 2012
+    - added insert_multi() method
+
 0.02  Sat May  5 03:26:13 2012
     - added ESCAPE clause at LIKE
     - added LIKE BINARY clause
