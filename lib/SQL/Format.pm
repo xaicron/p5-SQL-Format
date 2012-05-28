@@ -176,6 +176,14 @@ sub _table {
 sub _where {
     my ($self, $val, $bind) = @_;
 
+    if (ref $val eq 'ARRAY') {
+        my @ret;
+        for my $v (@$val) {
+            push @ret, $self->_where($v, $bind);
+        }
+        return @ret == 1 ? $ret[0] : join ' OR ', map { "($_)" } @ret;
+    }
+
     return unless ref $val eq 'HASH';
     my $ret = join ' AND ', map {
         my $org_key  = $_;
@@ -675,7 +683,7 @@ sub select {
         $format .= ' %j';
         push @args, $join;
     }
-    if (keys %{ $where || {} }) {
+    if (ref $where) {
         $format .= ' WHERE %w';
         push @args, $where;
     }

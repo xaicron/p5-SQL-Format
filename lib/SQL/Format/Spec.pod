@@ -237,6 +237,14 @@ For example:
   WHERE (`id` > ?) OR (`id` < ?)
   [qw/10 20/]
 
+=head2 where multiple
+
+  # basic
+  WHERE %w
+  [ { a => 1, b => 2 }, { c => 3, d => 4 }]
+  WHERE ((`a` = ?) AND (`b` = ?)) OR ((`c` = ?) AND (`d` = ?))
+  [qw/1 2 3 4/]
+
 =head2 where hash in
 
   # IN (array)
