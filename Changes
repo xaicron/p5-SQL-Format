@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.04  Wed May 30 00:44:06 2012
+    - support multiple where clause (suggested by riywo++)
+
 0.03  Wed May 16 01:02:58 2012
     - added insert_multi() method
 
