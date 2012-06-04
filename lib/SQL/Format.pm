@@ -188,8 +188,11 @@ sub _where {
     my $ret = join ' AND ', map {
         my $org_key  = $_;
         my $no_paren = 0;
-        my ($k, $v) = (_quote($org_key), $val->{$_});
-        if (ref $v eq 'ARRAY')  {
+        my ($k, $v) = (_quote($org_key), $val->{$org_key});
+        if (uc $org_key eq '-OR') {
+            $k = $self->_where($v, $bind);
+        }
+        elsif (ref $v eq 'ARRAY') {
             if (
                    ref $v->[0]
                 or (($v->[0]||'') eq '-and')

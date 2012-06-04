@@ -237,6 +237,26 @@ For example:
   WHERE (`id` > ?) OR (`id` < ?)
   [qw/10 20/]
 
+=head2 where special key -or
+
+  # single
+  WHERE %w
+  +{ -or => { a => 1, b => 2 } }
+  WHERE ((`a` = ?) AND (`b` = ?))
+  [qw/1 2/]
+
+  # multi
+  WHERE %w
+  +{ -or => [ { a => 1, b => 2 }, { c => 3, d => 4 } ] }
+  WHERE (((`a` = ?) AND (`b` = ?)) OR ((`c` = ?) AND (`d` = ?)))
+  [qw/1 2 3 4/]
+
+  # multi complex
+  WHERE %w
+  +{ -or => [ { a => 1, b => 2 }, { c => 3, d => 4 } ], foo => 'bar' }
+  WHERE (((`a` = ?) AND (`b` = ?)) OR ((`c` = ?) AND (`d` = ?))) AND (`foo` = ?)
+  [qw/1 2 3 4 bar/]
+
 =head2 where multiple
 
   # basic
