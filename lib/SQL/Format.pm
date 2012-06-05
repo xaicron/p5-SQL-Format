@@ -878,7 +878,7 @@ __END__
 
 =head1 NAME
 
-SQL::Format - Yet yet another SQL builder
+SQL::Format - Yet another yet another SQL builder
 
 =head1 SYNOPSIS
 
