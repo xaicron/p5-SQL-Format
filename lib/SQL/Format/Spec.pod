@@ -4,6 +4,10 @@
 
 =for stopwords
 
+=head1 NAME
+
+SQL::Format::Spec - The SQL::Format cheat sheet
+
 =head1 sqlf() CHEAT SHEET
 
 This cheat sheet rules are:
