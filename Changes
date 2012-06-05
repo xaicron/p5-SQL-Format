@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.06  Tue Jun  5 22:06:54 2012
+    - when specify empty array or hash, returned SQL is broken
+
 0.05  Tue Jun  5 16:53:32 2012
     - added { -or => xxx } syntax for where cluase
 
