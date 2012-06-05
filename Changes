@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.07  Wed Jun  6 01:44:10 2012
+    - Add missing NAME section in lib/SQL/Format/Spec.pod (dolmen++)
+
 0.06  Tue Jun  5 22:06:54 2012
     - when specify empty array or hash, returned SQL is broken
 
