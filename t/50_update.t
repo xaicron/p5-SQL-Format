@@ -68,4 +68,26 @@ $test->(
     },
 );
 
+$test->(
+    desc  => 'where in empty hash',
+    input => [
+        foo => [ bar => 'baz' ], {},
+    ],
+    expects => {
+        stmt => 'UPDATE `foo` SET `bar` = ?',
+        bind => [qw/baz/],
+    },
+);
+
+$test->(
+    desc  => 'where in empty array',
+    input => [
+        foo => [ bar => 'baz' ], [],
+    ],
+    expects => {
+        stmt => 'UPDATE `foo` SET `bar` = ?',
+        bind => [qw/baz/],
+    },
+);
+
 done_testing;

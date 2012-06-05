@@ -116,4 +116,26 @@ $test->(
     },
 );
 
+$test->(
+    desc  => 'where in empty hash',
+    input => [
+        foo => undef, {},
+    ],
+    expects => {
+        stmt => 'SELECT * FROM `foo`',
+        bind => [],
+    },
+);
+
+$test->(
+    desc  => 'where in empty array',
+    input => [
+        foo => undef, {},
+    ],
+    expects => {
+        stmt => 'SELECT * FROM `foo`',
+        bind => [],
+    },
+);
+
 done_testing;

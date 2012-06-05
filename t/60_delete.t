@@ -41,4 +41,22 @@ $test->(
     },
 );
 
+$test->(
+    desc  => 'where in empty hash',
+    input => [foo => {}],
+    expects => {
+        stmt => 'DELETE FROM `foo`',
+        bind => [],
+    },
+);
+
+$test->(
+    desc  => 'where in empty array',
+    input => [foo => []],
+    expects => {
+        stmt => 'DELETE FROM `foo`',
+        bind => [],
+    },
+);
+
 done_testing;
