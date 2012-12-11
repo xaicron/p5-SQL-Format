@@ -1,6 +1,7 @@
 cover_db
 MYMETA.*
 META.yml
+META.json
 Makefile
 blib
 inc
@@ -18,3 +19,7 @@ xs/*obj
 *.old
 dll*
 *~
+README
+LICENSE
+Build
+_build/*

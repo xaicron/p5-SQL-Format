@@ -14,3 +14,12 @@
 \.gitignore
 \ppport.h
 ^MYMETA\.
+^README.pod$
+
+# for Module::Build
+\bBuild$
+\b_build/
+\bBuild.bat$
+\bBuild.COM$
+\bBUILD.COM$
+\bbuild.com$
