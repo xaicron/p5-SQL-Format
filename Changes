@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.08  Wed Dec 12 00:23:30 2012
+    - added insert_on_duplicate() method (taken from SQL::Maker)
+
 0.07  Wed Jun  6 01:44:10 2012
     - Add missing NAME section in lib/SQL/Format/Spec.pod (dolmen++)
 
