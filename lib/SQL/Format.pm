@@ -846,9 +846,8 @@ sub insert_multi {
         . 'VALUES '.join($self->{delimiter}, @values_stmt);
 
     if ($opts->{update}) {
-        my ($update_stmt, @bind) = sqlf '%s', $opts->{update};
+        my $update_stmt = $self->_set($opts->{update}, \@bind_params);
         $stmt .= " ON DUPLICATE KEY UPDATE $update_stmt";
-        push @bind_params, @bind;
     }
 
     return $stmt, @bind_params;
