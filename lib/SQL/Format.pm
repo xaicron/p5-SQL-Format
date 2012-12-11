@@ -867,6 +867,18 @@ sub insert_multi_from_hash {
     $self->insert_multi($table, $cols, $new_values, $opts);
 }
 
+sub insert_on_duplicate {
+    my ($self, $table, $values, $update_values, $opts) = @_;
+    croak 'Usage: $sqlf->insert_on_duplicate($table, \%values|\@values, \%update_values|\@update_values [, \%opts])'
+        unless ref $values && ref $update_values;
+
+    my ($stmt, @bind) = $self->insert($table, $values, $opts);
+    my $set_clause = $self->_set($update_values, \@bind);
+
+    $stmt .= " ON DUPLICATE KEY UPDATE $set_clause";
+
+    return $stmt, @bind;
+}
 
 1;
 __END__
@@ -1509,6 +1521,53 @@ This is a values parameters. Must be HASH within ARRAY.
 =item \%opts
 
 Same as C<< insert_multi() >>
+
+=back
+
+=head2 insert_on_duplicate($table, \%values|\@values, \%update_values|\@update_values [, \%opts])
+
+This method generate "INSERT INTO ... ON DUPLICATE KEY UPDATE" query for MySQL.
+
+  my ($stmt, @bind) = $sqlf->insert_on_duplicate(
+      foo => {
+          bar => 'hoge',
+          baz => 'fuga',
+      }, {
+          bar => \'VALUES(bar)',
+          baz => 'piyo',
+      },
+  );
+  # $stmt: INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `bar` = VALUES(bar), baz = 'piyo'
+  # @bind: (qw/hoge fuga piyo/)
+
+Argument details are:
+
+=over
+
+=item $table
+
+This is a table name for target of INSERT.
+
+=item \%values|\@values
+
+This is a values parameters.
+
+=item \%update_values|\@update_values
+
+This is a ON DUPLICATE KEY UPDATE parameters.
+
+=item \%opts
+
+=over
+
+=item $opts->{prefix}
+
+This is a prefix for INSERT statement.
+
+  my ($stmt, @bind) = $sqlf->insert_on_duplicate(..., { prefix => 'INSERT IGNORE INTO' });
+  # $stmt: INSERT IGNORE INTO ...
+
+=back
 
 =back
 
