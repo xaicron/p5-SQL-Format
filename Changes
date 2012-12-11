@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.09  Wed Dec 12 00:42:54 2012
+    - repacking (no code changes)
+
 0.08  Wed Dec 12 00:23:30 2012
     - added insert_on_duplicate() method (taken from SQL::Maker)
 
