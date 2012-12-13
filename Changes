@@ -1,5 +1,8 @@
 Revision history for Perl extension SQL::Format
 
+0.10  Thu Dec 13 15:29:35 2012
+    - fixed test (because hash order confusion)
+
 0.09  Wed Dec 12 00:42:54 2012
     - repacking (no code changes)
 
