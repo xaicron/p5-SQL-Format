@@ -6,7 +6,7 @@ use Test::More;
 my $test = mk_test 'insert_multi';
 
 $test->(
-    desc => 'basic',
+    desc    => 'basic',
     input   => [
         foo => [qw/bar baz/],
         [ [qw/hoge fuga/], [qw/fizz buzz/] ],
@@ -18,7 +18,7 @@ $test->(
 );
 
 $test->(
-    desc => 'mismatch params',
+    desc    => 'mismatch params',
     input   => [
         foo => [qw/bar baz/],
         [ [qw/hoge fuga/], [qw/fizz buzz fizzbuzz/], [qw//] ],
@@ -30,7 +30,7 @@ $test->(
 );
 
 $test->(
-    desc => 'complex',
+    desc    => 'complex',
     input   => [
         foo => [qw/bar baz/],
         [ ['hoge', \'NOW()'], ['fuga', \['UNIX_TIMESTAMP(?)', '2012-12-12'] ] ],
@@ -42,7 +42,7 @@ $test->(
 );
 
 $test->(
-    desc => 'insert ignore',
+    desc    => 'insert ignore',
     input   => [
         foo => [qw/bar baz/],
         [ [qw/hoge fuga/], [qw/fizz buzz/] ],

@@ -42,6 +42,15 @@ $test->(
 );
 
 $test->(
+    desc    => 'add where multi',
+    input   => [foo => [qw/bar baz/], ordered_hashref(hoge => 'fuga', piyo => 'moge')],
+    expects => {
+        stmt => 'SELECT `bar`, `baz` FROM `foo` WHERE (`hoge` = ?) AND (`piyo` = ?)',
+        bind => [qw/fuga moge/],
+    },
+);
+
+$test->(
     desc    => 'add where, add order by',
     input   => [
         foo => [qw/bar baz/],

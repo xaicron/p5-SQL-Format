@@ -7,10 +7,10 @@ my $test = mk_test 'update';
 
 $test->(
     desc    => 'no conditions',
-    input   => [foo => { bar => 'baz' }],
+    input   => [foo => ordered_hashref(bar => 'baz', hoge => 'fuga')],
     expects => {
-        stmt => 'UPDATE `foo` SET `bar` = ?',
-        bind => [qw/baz/],
+        stmt => 'UPDATE `foo` SET `bar` = ?, `hoge` = ?',
+        bind => [qw/baz fuga/],
     },
 );
 

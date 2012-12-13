@@ -4,9 +4,10 @@ use warnings;
 use Exporter 'import';
 use IO::Handle;
 use SQL::Format ();
+use Tie::IxHash;
 use Test::More;
 
-our @EXPORT = qw(capture_warn mk_errstr mk_test);
+our @EXPORT = qw(capture_warn mk_errstr mk_test ordered_hashref);
 
 sub capture_warn(&) {
     my $code = shift;
@@ -29,7 +30,7 @@ sub mk_errstr {
 sub mk_test {
     my $method = shift;
     sub {
-        local $Test::Builder::Level = $Test::Builder::Level + 1;
+        local $Test::Builder::Level = $Test::Builder::Level + 2;
         my %specs = @_;
         my ($input, $expects, $desc, $instance) =
             @specs{qw/input expects desc instance/};
@@ -41,6 +42,11 @@ sub mk_test {
             is_deeply \@bind, $expects->{bind};
         };
     };
+}
+
+sub ordered_hashref {
+    tie my %params, Tie::IxHash::, @_;
+    return \%params;
 }
 
 1;

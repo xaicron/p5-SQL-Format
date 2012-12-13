@@ -9,8 +9,8 @@ $test->(
     desc => 'basic',
     input   => [
         foo => [
-            { bar => 'hoge', baz => 'fuga' },
-            { bar => 'fizz', baz => 'buzz' },
+            ordered_hashref(bar => 'hoge', baz => 'fuga'),
+            ordered_hashref(bar => 'fizz', baz => 'buzz'),
         ],
     ],
     expects => {
@@ -23,8 +23,8 @@ $test->(
     desc => 'mismatch params',
     input   => [
         foo => [
-            { bar => 'hoge', baz => 'fuga' },
-            { bar => 'fizz', baz => 'buzz', xxx => 'yyy' },
+            ordered_hashref(bar => 'hoge', baz => 'fuga'),
+            ordered_hashref(bar => 'fizz', baz => 'buzz', xxx => 'yyy'),
             { },
         ],
     ],
@@ -38,8 +38,8 @@ $test->(
     desc => 'complex',
     input   => [
         foo => [
-            { bar => 'hoge', baz => \'NOW()' },
-            { bar => 'fuga', baz => \['UNIX_TIMESTAMP(?)', '2012-12-12'] },
+            ordered_hashref(bar => 'hoge', baz => \'NOW()'),
+            ordered_hashref(bar => 'fuga', baz => \['UNIX_TIMESTAMP(?)', '2012-12-12']),
         ],
     ],
     expects => {
@@ -52,8 +52,8 @@ $test->(
     desc => 'insert ignore',
     input   => [
         foo => [
-            { bar => 'hoge', baz => 'fuga' },
-            { bar => 'fizz', baz => 'buzz' },
+            ordered_hashref(bar => 'hoge', baz => 'fuga'),
+            ordered_hashref(bar => 'fizz', baz => 'buzz'),
         ],
         { prefix => 'INSERT IGNORE INTO' },
     ],
@@ -67,8 +67,8 @@ $test->(
     desc => 'on duplicate key update',
     input   => [
         foo => [
-            { bar => 'hoge', baz => 'fuga' },
-            { bar => 'fizz', baz => 'buzz' },
+            ordered_hashref(bar => 'hoge', baz => 'fuga'),
+            ordered_hashref(bar => 'fizz', baz => 'buzz'),
         ],
         { update => { bar => 'piyo' } },
     ],

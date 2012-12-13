@@ -6,7 +6,10 @@ my $build = Module::Build->new(
     license        => 'perl',
     dynamic_config => 0,
 
-    build_requires     => { 'Test::More' => '0.98' },
+    build_requires     => {
+        'Test::More'  => '0.98',
+        'Tie::IxHash' => '0',
+    },
     configure_requires => { 'Module::Build' => '0.38' },
     requires           => { 'perl' => '5.008001' },
 

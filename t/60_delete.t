@@ -16,10 +16,10 @@ $test->(
 
 $test->(
     desc    => 'add where',
-    input   => ['foo', { bar => 'baz' }],
+    input   => ['foo', ordered_hashref(bar => 'baz', hoge => 'fuga')],
     expects => {
-        stmt => 'DELETE FROM `foo` WHERE (`bar` = ?)',
-        bind => [qw/baz/],
+        stmt => 'DELETE FROM `foo` WHERE (`bar` = ?) AND (`hoge` = ?)',
+        bind => [qw/baz fuga/],
     },
 );
 

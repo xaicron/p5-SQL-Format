@@ -9,14 +9,8 @@ $test->(
     desc  => 'basic',
     input => [
         'foo',
-        {
-            bar => 'hoge',
-            baz => 'fuga',
-        },
-        {
-            bar => \'VALUES(bar)',
-            baz => 'piyo',
-        },
+        ordered_hashref(bar => 'hoge', baz => 'fuga'),
+        ordered_hashref(bar => \'VALUES(bar)', baz => 'piyo'),
     ],
     expects => {
         stmt => 'INSERT INTO `foo` (`bar`, `baz`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `bar` = VALUES(bar), `baz` = ?',
