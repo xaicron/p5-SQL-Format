@@ -95,9 +95,21 @@ For example:
   SELECT UNIX_TIMESTAMP() `bar` FROM table
   []
 
-  # ref array in array
+  # ref array in array (will deprecate)
   SELECT %c FROM table
   [ \[\'UNIX_TIMESTAMP(?)' => 'bar', '2012-12-12 12:12:12'] ]
+  SELECT UNIX_TIMESTAMP(?) `bar` FROM table
+  ['2012-12-12 12:12:12']
+
+  # array in array in array
+  SELECT %c FROM table
+  [ [ [\'UNIX_TIMESTAMP(?)', '2012-12-12 12:12:12'], 'bar' ] ]
+  SELECT UNIX_TIMESTAMP(?) `bar` FROM table
+  ['2012-12-12 12:12:12']
+
+  # ref array in array in array
+  SELECT %c FROM table
+  [ [ \[\'UNIX_TIMESTAMP(?)', '2012-12-12 12:12:12'], 'bar' ] ]
   SELECT UNIX_TIMESTAMP(?) `bar` FROM table
   ['2012-12-12 12:12:12']
 

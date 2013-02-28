@@ -112,9 +112,18 @@ sub _columns {
                 }
                 elsif ($ref eq 'ARRAY') {
                     my ($term, $col) = @$_;
+                    my @params;
+                    if (ref $term eq 'ARRAY') {
+                        ($term, @params) = @$term;
+                    }
+                    elsif (ref $term eq 'REF' && ref $$term eq 'ARRAY') {
+                        ($term, @params) = @{$$term};
+                    }
+
                     $ret = (
                         ref $term eq 'SCALAR' ? $$term : _quote($term)
                     ).' '._quote($col);
+                    push @$bind, @params;
                 }
                 elsif ($ref eq 'REF' && ref $$_ eq 'ARRAY') {
                     my ($term, $col, @params) = @{$$_};
