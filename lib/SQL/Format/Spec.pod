@@ -813,6 +813,12 @@ For example:
   INNER JOIN `bar` ON (`foo`.`id` < `bar`.`id`) AND (`foo`.`id` > ?)
   [qw/12345/]
 
+  # inner join on where clause
+  %j
+  { table => 'bar', condition => { -where => { foo => 12345 } } }
+  INNER JOIN `bar` ON (`foo` = ?)
+  [qw/12345/]
+
   # inner join on array
   %j
   { table => 'bar', condition => [qw/id created_at/] }
