@@ -2,6 +2,9 @@ Revision history for Perl extension SQL::Format
 
 {{$NEXT}}
 
+0.13 2013-04-17T08:41:52Z
+    - re packaging
+
 0.12 2013-04-08T14:39:18Z
     - added -where option for join condition
 
