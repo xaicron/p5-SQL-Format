@@ -64,7 +64,7 @@
          "web" : "https://github.com/xaicron/p5-SQL-Format"
       }
    },
-   "version" : "0.13",
+   "version" : "0.14",
    "x_contributors" : [
       "Olivier MenguÃ© <dolmen@cpan.org>",
       "xaicron <xaicron@gmail.com>"
