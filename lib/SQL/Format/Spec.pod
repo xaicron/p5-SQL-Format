@@ -200,25 +200,25 @@ For example:
   # scalars
   WHERE %w
   { id => [ -and => qw/1 2 3/ ] }
-  WHERE (`id` = ?) AND (`id` = ?) AND (`id` = ?)
+  WHERE ((`id` = ?) AND (`id` = ?) AND (`id` = ?))
   [qw/1 2 3/]
 
   # hashes
   WHERE %w
   { id => [ -and => { '>' => 10 }, { '<' => 20 } ] }
-  WHERE (`id` > ?) AND (`id` < ?)
+  WHERE ((`id` > ?) AND (`id` < ?))
   [qw/10 20/]
 
   # array(s)
   WHERE %w
   { id => [ -and => [qw/1 2 3/], [qw/4 5 6/] ] }
-  WHERE (`id` IN (?, ?, ?)) AND (`id` IN (?, ?, ?))
+  WHERE ((`id` IN (?, ?, ?)) AND (`id` IN (?, ?, ?)))
   [qw/1 2 3 4 5 6/]
 
   # IN and scalar
   WHERE %w
   { id => [ -and => { IN => [qw/1 2 3/] }, 4 ] }
-  WHERE (`id` IN (?, ?, ?)) AND (`id` = ?)
+  WHERE ((`id` IN (?, ?, ?)) AND (`id` = ?))
   [qw/1 2 3 4/]
 
 =head2 where array or
@@ -226,31 +226,31 @@ For example:
   # scalars
   WHERE %w
   { id => [ -or => qw/1 2 3/ ] }
-  WHERE (`id` = ?) OR (`id` = ?) OR (`id` = ?)
+  WHERE ((`id` = ?) OR (`id` = ?) OR (`id` = ?))
   [qw/1 2 3/]
 
   # hashes
   WHERE %w
   { id => [ -or => { '>' => 10 }, { '<' => 20 } ] }
-  WHERE (`id` > ?) OR (`id` < ?)
+  WHERE ((`id` > ?) OR (`id` < ?))
   [qw/10 20/]
 
   # array(s)
   WHERE %w
   { id => [ -or => [qw/1 2 3/], [qw/4 5 6/] ] }
-  WHERE (`id` IN (?, ?, ?)) OR (`id` IN (?, ?, ?))
+  WHERE ((`id` IN (?, ?, ?)) OR (`id` IN (?, ?, ?)))
   [qw/1 2 3 4 5 6/]
 
   # IN and scalar
   WHERE %w
   { id => [ -or => { IN => [qw/1 2 3/] }, 4 ] }
-  WHERE (`id` IN (?, ?, ?)) OR (`id` = ?)
+  WHERE ((`id` IN (?, ?, ?)) OR (`id` = ?))
   [qw/1 2 3 4/]
 
   # no-op equals OR
   WHERE %w
   { id => [ { '>' => 10 }, { '<' => 20 } ] }
-  WHERE (`id` > ?) OR (`id` < ?)
+  WHERE ((`id` > ?) OR (`id` < ?))
   [qw/10 20/]
 
 =head2 where special key -or

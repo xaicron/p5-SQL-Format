@@ -228,7 +228,6 @@ sub _where {
                     push @$bind, @_bind;
                 }
                 $k = join " $logic ", @statements;
-                $no_paren = 1;
             }
             elsif (@$v == 0) {
                 # []
