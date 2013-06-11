@@ -25,7 +25,7 @@ my %args = (
 
     name            => 'SQL-Format',
     module_name     => 'SQL::Format',
-    allow_pure_perl => 0,
+    allow_pureperl => 0,
 
     script_files => [glob('script/*'), glob('bin/*')],
 
