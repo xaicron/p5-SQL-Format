@@ -37,6 +37,7 @@
             "Test::CPAN::Meta" : "0",
             "Test::MinimumVersion" : "0.10108",
             "Test::Pod" : "1.41",
+            "Test::Requires" : "0",
             "Test::Spellunker" : "v0.2.7"
          }
       },
@@ -47,7 +48,7 @@
       },
       "test" : {
          "requires" : {
-            "Test::More" : "0.98",
+            "Test::More" : "0",
             "Tie::IxHash" : "0"
          }
       }
@@ -64,7 +65,7 @@
          "web" : "https://github.com/xaicron/p5-SQL-Format"
       }
    },
-   "version" : "0.14",
+   "version" : "0.15",
    "x_contributors" : [
       "Olivier MenguÃ© <dolmen@cpan.org>",
       "xaicron <xaicron@gmail.com>"
