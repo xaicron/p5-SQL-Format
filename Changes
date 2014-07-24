@@ -2,6 +2,9 @@ Revision history for Perl extension SQL::Format
 
 {{$NEXT}}
 
+0.16 2014-07-24T14:56:45Z
+    - Added -and special key
+
 0.15 2013-06-11T10:21:26Z
     - Added validation for limit and offset value
     - Fixed priority formula

@@ -201,7 +201,7 @@ Currently implemented formatters are:
         # $stmt: `bar` = ?, `hoge` = CONCAT(?, ?)
         # @bind: ('baz', 'ya', 'ppo')
 
-For more examples, see also [SQL::Format::Spec](http://search.cpan.org/perldoc?SQL::Format::Spec).
+For more examples, see also [SQL::Format::Spec](https://metacpan.org/pod/SQL::Format::Spec).
 
 You can change the behavior by changing the global variable.
 
@@ -209,7 +209,7 @@ You can change the behavior by changing the global variable.
 
     This is a quote character for table or column name.
 
-    Default value is `"`"`.
+    Default value is `` "`" ``.
 
 - $SQL::Format::NAME\_SEP : Str
 
@@ -616,8 +616,8 @@ it under the same terms as Perl itself.
 
 # SEE ALSO
 
-[SQL::Format::Spec](http://search.cpan.org/perldoc?SQL::Format::Spec)
+[SQL::Format::Spec](https://metacpan.org/pod/SQL::Format::Spec)
 
-[SQL::Maker](http://search.cpan.org/perldoc?SQL::Maker)
+[SQL::Maker](https://metacpan.org/pod/SQL::Maker)
 
-[SQL::Abstract](http://search.cpan.org/perldoc?SQL::Abstract)
+[SQL::Abstract](https://metacpan.org/pod/SQL::Abstract)
