@@ -183,14 +183,15 @@ sub _table {
 }
 
 sub _where {
-    my ($self, $val, $bind) = @_;
+    my ($self, $val, $bind, $logic) = @_;
 
     if (ref $val eq 'ARRAY') {
         my @ret;
         for my $v (@$val) {
             push @ret, $self->_where($v, $bind);
         }
-        return @ret == 1 ? $ret[0] : join ' OR ', map { "($_)" } @ret;
+        $logic ||= 'OR';
+        return @ret == 1 ? $ret[0] : join " $logic ", map { "($_)" } @ret;
     }
 
     return unless ref $val eq 'HASH';
@@ -200,6 +201,9 @@ sub _where {
         my ($k, $v) = (_quote($org_key), $val->{$org_key});
         if (uc $org_key eq '-OR') {
             $k = $self->_where($v, $bind);
+        }
+        elsif (uc $org_key eq '-AND') {
+            $k = $self->_where($v, $bind, 'AND');
         }
         elsif (ref $v eq 'ARRAY') {
             if (

@@ -15,7 +15,7 @@ This cheat sheet rules are:
   # Comment
   Input  : $format
   Input  : \@arguments
-  Expects: $stmt 
+  Expects: $stmt
   Expects: \@bind
 
 For example:
@@ -272,6 +272,32 @@ For example:
   +{ -or => [ { a => 1, b => 2 }, { c => 3, d => 4 } ], foo => 'bar' }
   WHERE (((`a` = ?) AND (`b` = ?)) OR ((`c` = ?) AND (`d` = ?))) AND (`foo` = ?)
   [qw/1 2 3 4 bar/]
+
+=head2 where special key -and
+
+  # single
+  WHERE %w
+  +{ -and => { a => 1, b => 2 } }
+  WHERE ((`a` = ?) AND (`b` = ?))
+  [qw/1 2/]
+
+  # multi
+  WHERE %w
+  +{ -and => [ { a => 1, b => 2 }, { c => 3, d => 4 } ] }
+  WHERE (((`a` = ?) AND (`b` = ?)) AND ((`c` = ?) AND (`d` = ?)))
+  [qw/1 2 3 4/]
+
+  # multi complex
+  WHERE %w
+  +{ -and => [ { a => 1, b => 2 }, { c => 3, d => 4 } ], foo => 'bar' }
+  WHERE (((`a` = ?) AND (`b` = ?)) AND ((`c` = ?) AND (`d` = ?))) AND (`foo` = ?)
+  [qw/1 2 3 4 bar/]
+
+  # complex
+  WHERE %w
+  +{ -and => [ -or => [ { a => 1 }, { b => 2 } ], -or => [ { c => 3 }, { d => 4 } ], { foo => 'bar' } ], hoge => 'fuga' }
+  WHERE ((((`a` = ?)) OR ((`b` = ?))) AND (((`c` = ?)) OR ((`d` = ?))) AND ((`foo` = ?))) AND (`hoge` = ?)
+  [qw/1 2 3 4 bar fuga/]
 
 =head2 where multiple
 
