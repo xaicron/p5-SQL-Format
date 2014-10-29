@@ -205,6 +205,9 @@ sub _where {
         elsif (uc $org_key eq '-AND') {
             $k = $self->_where($v, $bind, 'AND');
         }
+        elsif (uc $org_key eq '-NOT') {
+            $k = " NOT (" . $self->_where($v, $bind) . ") ";
+        }
         elsif (ref $v eq 'ARRAY') {
             if (
                    ref $v->[0]
