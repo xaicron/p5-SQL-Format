@@ -195,6 +195,9 @@ sub _where {
     }
 
     return unless ref $val eq 'HASH';
+
+    return '(1=1)' unless %$val;
+
     my $ret = join ' AND ', map {
         my $org_key  = $_;
         my $no_paren = 0;
