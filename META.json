@@ -4,13 +4,13 @@
       "xaicron <xaicron {at} cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v2.1.1, CPAN::Meta::Converter version 2.140640",
+   "generated_by" : "Minilla/v3.0.12, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "SQL-Format",
    "no_index" : {
@@ -30,7 +30,8 @@
          "requires" : {
             "CPAN::Meta" : "0",
             "CPAN::Meta::Prereqs" : "0",
-            "Module::Build" : "0.38"
+            "Module::Build" : "0",
+            "Module::Build::Tiny" : "0.035"
          }
       },
       "develop" : {
@@ -70,6 +71,8 @@
    "version" : "0.16",
    "x_contributors" : [
       "Olivier Mengué <dolmen@cpan.org>",
-      "xaicron <xaicron@gmail.com>"
-   ]
+      "Yuji Shimada <xaicron@gmail.com>",
+      "karupanerura <karupa@cpan.org>"
+   ],
+   "x_serialization_backend" : "JSON::PP version 2.94"
 }
