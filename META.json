@@ -68,7 +68,7 @@
          "web" : "https://github.com/xaicron/p5-SQL-Format"
       }
    },
-   "version" : "0.17",
+   "version" : "0.18",
    "x_authority" : "cpan:XAICRON",
    "x_contributors" : [
       "Olivier Mengué <dolmen@cpan.org>",
