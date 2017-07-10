@@ -32,14 +32,15 @@ sub mk_test {
     sub {
         local $Test::Builder::Level = $Test::Builder::Level + 2;
         my %specs = @_;
-        my ($input, $expects, $desc, $instance) =
-            @specs{qw/input expects desc instance/};
+        my ($input, $expects, $desc, $instance, $subtest) =
+            @specs{qw/input expects desc instance subtest/};
 
         $instance ||= SQL::Format->new;
         subtest "$method(): $desc" => sub {
             my ($stmt, @bind) = $instance->$method(@$input);
             is $stmt, $expects->{stmt};
             is_deeply \@bind, $expects->{bind};
+            goto $subtest if $subtest;
         };
     };
 }
