@@ -461,7 +461,7 @@ sub _options {
                 $ret .= "$val->{limit}, $val->{offset}";
             }
             else {
-                warn "Unkown LIMIT_DIALECT `$LIMIT_DIALECT`";
+                croak "Unkown LIMIT_DIALECT `$LIMIT_DIALECT`";
                 $ret .= $val->{limit};
             }
         }
