@@ -697,7 +697,7 @@ sub select {
 
     if (delete $opts->{for_update}) {
         if (exists $opts->{suffix}) {
-            warn 'Conflict option `for_update` and `suffix`. `for_update` option is ignored.';
+            croak 'Conflict option `for_update` and `suffix`. `for_update` option is ignored.';
         }
         else {
             $opts->{suffix} = 'FOR UPDATE';

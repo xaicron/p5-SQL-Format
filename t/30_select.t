@@ -116,27 +116,6 @@ $test->(
     },
 );
 
-{
-    my @warnings;
-    local $SIG{__WARN__} = sub { push @warnings => @_ };
-    $test->(
-        desc  => 'conflict for_update and suffix',
-        input => [
-            foo => '*',
-            { hoge => 'fuga' },
-            { for_update => 1, suffix => 'LOCK IN SHARE MODE' },
-        ],
-        expects => {
-            stmt => 'SELECT * FROM `foo` WHERE (`hoge` = ?) LOCK IN SHARE MODE',
-            bind => [qw/fuga/],
-        },
-        subtest => sub {
-            is @warnings, 1;
-            like $warnings[0], qr/Conflict option \`for_update\` and \`suffix\`\. \`for_update\` option is ignored/;
-        },
-    );
-};
-
 $test->(
     desc => 'join',
     input => [
