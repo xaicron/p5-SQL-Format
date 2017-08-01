@@ -695,6 +695,15 @@ sub select {
     local $QUOTE_CHAR    = $self->{quote_char};
     local $LIMIT_DIALECT = $self->{limit_dialect};
 
+    if (delete $opts->{for_update}) {
+        if (exists $opts->{suffix}) {
+            croak 'Conflict option `for_update` and `suffix`. `for_update` option is ignored.';
+        }
+        else {
+            $opts->{suffix} = 'FOR UPDATE';
+        }
+    }
+
     my $prefix = delete $opts->{prefix} || 'SELECT';
     my $suffix = delete $opts->{suffix};
     my $format = "$prefix %c FROM %t";
@@ -1255,6 +1264,12 @@ Additional value for after the SELECT statement.
   # @bind: ('baz')
 
 Default value is C<< '' >>
+
+=item $opts->{for_update}
+
+Alias for C<$opts->{suffix} = 'FOR UPDATE';>.
+
+This option provides compatibility with L<SQL::Maker>.
 
 =item $opts->{limit}
 
