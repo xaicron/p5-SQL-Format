@@ -68,12 +68,12 @@
          "web" : "https://github.com/xaicron/p5-SQL-Format"
       }
    },
-   "version" : "0.18",
+   "version" : "0.19",
    "x_authority" : "cpan:XAICRON",
    "x_contributors" : [
       "Olivier Mengué <dolmen@cpan.org>",
-      "karupanerura <karupa@cpan.org>",
-      "xaicron <xaicron@gmail.com>"
+      "Yuji Shimada <xaicron@gmail.com>",
+      "karupanerura <karupa@cpan.org>"
    ],
    "x_serialization_backend" : "JSON::PP version 2.94"
 }
