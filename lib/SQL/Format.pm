@@ -185,6 +185,9 @@ sub _table {
 sub _where {
     my ($self, $val, $bind, $logic) = @_;
 
+    if (defined $logic && $logic eq 'NOT') {
+        return ' NOT (' . $self->_where($val, $bind) . ') ';
+    }
     if (ref $val eq 'ARRAY') {
         my @ret;
         for my $v (@$val) {
@@ -207,6 +210,9 @@ sub _where {
         }
         elsif (uc $org_key eq '-AND') {
             $k = $self->_where($v, $bind, 'AND');
+        }
+        elsif (uc $org_key eq '-NOT') {
+            $k = $self->_where($v, $bind, 'NOT');
         }
         elsif (ref $v eq 'ARRAY') {
             if (

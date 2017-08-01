@@ -299,6 +299,33 @@ For example:
   WHERE ((((`a` = ?)) OR ((`b` = ?))) AND (((`c` = ?)) OR ((`d` = ?))) AND ((`foo` = ?))) AND (`hoge` = ?)
   [qw/1 2 3 4 bar fuga/]
 
+=head2 where special key -not
+
+  # single
+  WHERE %w
+  +{ -not => { a => 1 } }
+  WHERE ( NOT ((`a` = ?)) )
+  [qw/1/]
+
+  # multi and
+  WHERE %w
+  +{ -not => { a => 1, b => 2 } }
+  WHERE ( NOT ((`a` = ?) AND (`b` = ?)) )
+  [qw/1 2/]
+
+  # multi or
+  WHERE %w
+  +{ -not => [ { a => 1 }, { b => 2 } ] }
+  WHERE ( NOT (((`a` = ?)) OR ((`b` = ?))) )
+  [qw/1 2/]
+
+  # multi complex
+  WHERE %w
+  +{ -not => [ { a => 1 }, { b => 2 } ], c => 3 }
+  WHERE ( NOT (((`a` = ?)) OR ((`b` = ?))) ) AND (`c` = ?)
+  [qw/1 2 3/]
+
+
 =head2 where multiple
 
   # basic
